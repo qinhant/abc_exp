@@ -227,7 +227,7 @@ Vec_Int_t *Pdr_ManDeriveFlopPriorities2(Gia_Man_t *p, int fMuxCtrls)
     Vec_IntFree(vCosts);
     vCosts = Vec_IntInvert(vRes, -1);
     Vec_IntFree(vRes);
-    // Vec_IntPrint( vCosts );
+    Vec_IntPrint(vCosts);
     return vCosts;
 }
 

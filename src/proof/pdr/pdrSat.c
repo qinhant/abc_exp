@@ -299,6 +299,7 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
     p->nCalls++;
     pSat = Pdr_ManFetchSolver(p, k);
     if (pCube == NULL) // solve the property
+    // This is checking whether !P && R_k is satisfiable, it does not involve transition relation
     {
         clk = Abc_Clock();
         Lit = Abc_Var2Lit(Pdr_ObjSatVar(p, k, 2, Aig_ManCo(p->pAig, p->iOutCur)), 0); // pos literal (property fails)
@@ -309,6 +310,7 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
             return -1;
     }
     else // check relative containment in terms of next states
+    // This is check that for a given cube c, whehter !c && R_k && Tr && c is satisfiable
     {
         if (fUseLit)
         {

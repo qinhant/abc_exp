@@ -79,6 +79,7 @@ void Pdr_ManSetDefaultParams(Pdr_Par_t *pPars)
     pPars->nDropOuts = 0;          // the number of timed out outputs
     pPars->timeLastSolved = 0;     // last one solved
     pPars->pInvFileName = NULL;    // invariant file name
+    pPars->pPriFileName = NULL;    // priority file name
 }
 
 /**Function*************************************************************
@@ -297,6 +298,11 @@ int *Pdr_ManSortByPriority(Pdr_Man_t *p, Pdr_Set_t *pCube)
     */
     return pArray;
 }
+
+// int *Pdr_ManSortByPriority(Pdr_Man_t *p, Pdr_Set_t *pCube)
+// {
+//     return p->pOrder;
+// }
 
 /**Function*************************************************************
 
@@ -683,6 +689,7 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
     *ppCubeMin = NULL;
     if (p->pPars->fFlopOrder)
         Vec_IntSelectSortPrioReverseLit(pCube->Lits, pCube->nLits, p->vPrio);
+    // This is checking that (!pCube && R_k && Tr && pcube) is satisfiable
     RetValue = Pdr_ManCheckCube(p, k, pCube, ppPred, p->pPars->nConfLimit, 0, 1);
     if (p->pPars->fFlopOrder)
         Vec_IntSelectSort(pCube->Lits, pCube->nLits);
@@ -919,6 +926,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
         assert(!Pdr_SetIsInit(pThis->pState, -1));
         p->iUseFrame = Abc_MinInt(p->iUseFrame, pThis->iFrame);
         clk = Abc_Clock();
+        // check if the cube is alraedy contained syntactically
         if (Pdr_ManCheckContainment(p, pThis->iFrame, pThis->pState))
         {
             p->tContain += Abc_Clock() - clk;
@@ -927,7 +935,8 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
         }
         p->tContain += Abc_Clock() - clk;
 
-        // check if the cube is already contained
+        // check if the cube is already contained using sat solver
+        // This is checking a sat query that (R_k && !c) is satisfiable
         RetValue = Pdr_ManCheckCubeCs(p, pThis->iFrame, pThis->pState);
         if (RetValue == -1) // resource limit is reached
         {
@@ -980,7 +989,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 assert((pCubeMin->Lits[i] / 2) < Aig_ManRegNum(p->pAig));
                 if ((Vec_IntEntry(p->vPrio, pCubeMin->Lits[i] / 2) >> p->nPrioShift) == 0)
                     p->nAbsFlops++;
-                Vec_IntAddToEntry(p->vPrio, pCubeMin->Lits[i] / 2, 1 << p->nPrioShift);
+                // Vec_IntAddToEntry(p->vPrio, pCubeMin->Lits[i] / 2, 1 << p->nPrioShift);
             }
             Vec_VecPush(p->vClauses, k, pCubeMin); // consume ref
             p->nCubes++;
@@ -1035,7 +1044,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
 ***********************************************************************/
 int Pdr_ManSolveInt(Pdr_Man_t *p)
 {
-    int fPrintClauses = 1;
+    int fPrintClauses = 0;
     Pdr_Set_t *pCube = NULL;
     Aig_Obj_t *pObj;
     Abc_Cex_t *pCexNew;
@@ -1058,6 +1067,7 @@ int Pdr_ManSolveInt(Pdr_Man_t *p)
     Pdr_ManCreateSolver(p, (iFrame = 0));
     while (1)
     {
+        Vec_IntPrint(p->vPrio);
         int fRefined = 0;
         if (p->pPars->fUseAbs && p->vAbsFlops == NULL && iFrame == 1)
         {
@@ -1376,6 +1386,38 @@ int Pdr_ManSolveInt(Pdr_Man_t *p)
 }
 
 /**Function*************************************************************
+  Synopsis    []
+
+  Description [Read the initial priorities from the file.]
+
+  SideEffects []
+
+  SeeAlso     []
+***********************************************************************/
+Vec_Int_t *Pdr_ManReadPriorities(char *pFileName, Aig_Man_t *pAig, int maxPrio)
+{
+    Vec_Int_t *vPrioInit;
+    vPrioInit = Vec_IntStart(Aig_ManRegNum(pAig));
+    FILE *pFile = fopen(pFileName, "r");
+    int vFlop;
+
+    if (pFile == NULL)
+    {
+        fprintf(stdout, "Cannot open input file \"%s\". ", pFileName);
+        return NULL;
+    }
+
+    while (fscanf(pFile, "%d", &vFlop) == 1)
+    {
+        vPrioInit->pArray[vFlop] = maxPrio;
+    }
+
+    fclose(pFile);
+    Vec_IntPrint(vPrioInit);
+    return vPrioInit;
+}
+
+/**Function*************************************************************
 
   Synopsis    []
 
@@ -1391,6 +1433,7 @@ int Pdr_ManSolve(Aig_Man_t *pAig, Pdr_Par_t *pPars)
     Pdr_Man_t *p;
     int k, RetValue;
     abctime clk = Abc_Clock();
+    Vec_Int_t *vPrioInit = NULL;
     if (pPars->nTimeOutOne && !pPars->fSolveAll)
         pPars->nTimeOutOne = 0;
     if (pPars->nTimeOutOne && pPars->nTimeOut == 0)
@@ -1409,8 +1452,15 @@ int Pdr_ManSolve(Aig_Man_t *pAig, Pdr_Par_t *pPars)
                   pPars->fSolveAll ? "yes" : "no");
     }
     ABC_FREE(pAig->pSeqModel);
+    if (pPars->pPriFileName != NULL)
+    {
+        vPrioInit = Pdr_ManReadPriorities(pPars->pPriFileName, pAig, 3000000);
+        if (vPrioInit == NULL)
+            return -1;
+    }
+
     // Note: the third input here can be an initialized priority array
-    p = Pdr_ManStart(pAig, pPars, NULL);
+    p = Pdr_ManStart(pAig, pPars, vPrioInit);
     RetValue = Pdr_ManSolveInt(p);
     if (RetValue == 0)
         assert(pAig->pSeqModel != NULL || p->vCexes != NULL);
