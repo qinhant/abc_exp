@@ -299,11 +299,6 @@ int *Pdr_ManSortByPriority(Pdr_Man_t *p, Pdr_Set_t *pCube)
     return pArray;
 }
 
-// int *Pdr_ManSortByPriority(Pdr_Man_t *p, Pdr_Set_t *pCube)
-// {
-//     return p->pOrder;
-// }
-
 /**Function*************************************************************
 
   Synopsis    []
@@ -989,7 +984,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 assert((pCubeMin->Lits[i] / 2) < Aig_ManRegNum(p->pAig));
                 if ((Vec_IntEntry(p->vPrio, pCubeMin->Lits[i] / 2) >> p->nPrioShift) == 0)
                     p->nAbsFlops++;
-                // Vec_IntAddToEntry(p->vPrio, pCubeMin->Lits[i] / 2, 1 << p->nPrioShift);
+                Vec_IntAddToEntry(p->vPrio, pCubeMin->Lits[i] / 2, 1 << p->nPrioShift);
             }
             Vec_VecPush(p->vClauses, k, pCubeMin); // consume ref
             p->nCubes++;
@@ -1067,7 +1062,7 @@ int Pdr_ManSolveInt(Pdr_Man_t *p)
     Pdr_ManCreateSolver(p, (iFrame = 0));
     while (1)
     {
-        Vec_IntPrint(p->vPrio);
+        // Vec_IntPrint(p->vPrio);
         int fRefined = 0;
         if (p->pPars->fUseAbs && p->vAbsFlops == NULL && iFrame == 1)
         {
@@ -1418,6 +1413,49 @@ Vec_Int_t *Pdr_ManReadPriorities(char *pFileName, Aig_Man_t *pAig, int maxPrio)
 }
 
 /**Function*************************************************************
+  Synopsis    []
+
+  Description [Read the initial priorities from the file.]
+
+  SideEffects []
+
+  SeeAlso     []
+***********************************************************************/
+int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
+{
+    FILE *pFile = fopen(pFileName, "r");
+    int vFlop;
+
+    if (pFile == NULL)
+    {
+        fprintf(stdout, "Cannot open input file \"%s\". ", pFileName);
+        return -1;
+    }
+
+    int flop;
+    int symmetry;
+    int predicate;
+    char line[100];
+    if (fgets(line, sizeof(line), pFile) == NULL)
+    {
+        perror("Error reading the first line");
+        fclose(pFile);
+        return -1;
+    }
+    p->vSymMap = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vEquivMap = Vec_IntStart(Aig_ManRegNum(pAig));
+    while (fgets(line, sizeof(line), pFile))
+    {
+        sscanf(line, "%d %d %d", &flop, &symmetry, &predicate);
+        printf("flop: %d, symmetry: %d, predicate: %d\n", flop, symmetry, predicate);
+        p->vSymMap->pArray[flop] = symmetry;
+        p->vEquivMap->pArray[flop] = predicate;
+    }
+    fclose(pFile);
+    return 1;
+}
+
+/**Function*************************************************************
 
   Synopsis    []
 
@@ -1459,8 +1497,18 @@ int Pdr_ManSolve(Aig_Man_t *pAig, Pdr_Par_t *pPars)
             return -1;
     }
 
+    if (pPars->pRelFileName != NULL)
+    {
+        RetValue = Pdr_ManReadRelations(pPars->pRelFileName, pAig, p);
+        if (RetValue == -1)
+        {
+            return -1;
+        }
+    }
+
     // Note: the third input here can be an initialized priority array
     p = Pdr_ManStart(pAig, pPars, vPrioInit);
+
     RetValue = Pdr_ManSolveInt(p);
     if (RetValue == 0)
         assert(pAig->pSeqModel != NULL || p->vCexes != NULL);

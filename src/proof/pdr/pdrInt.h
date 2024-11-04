@@ -140,6 +140,8 @@ struct Pdr_Man_t_
     Vec_Int_t *vRes;      // final result
     abctime *pTime4Outs;  // timeout per output
     Vec_Ptr_t *vInfCubes; // infinity clauses/cubes
+    Vec_Int_t *vSymMap;   // flop symmetry map
+    Vec_Int_t *vEquivMap; // flop equivalence predicate map
     // statistics
     int nBlocks; // the number of times blockState was called
     int nObligs; // the number of proof obligations derived
