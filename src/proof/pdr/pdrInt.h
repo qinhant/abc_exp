@@ -142,6 +142,7 @@ struct Pdr_Man_t_
     Vec_Ptr_t *vInfCubes; // infinity clauses/cubes
     Vec_Int_t *vSymMap;   // flop symmetry map
     Vec_Int_t *vEquivMap; // flop equivalence predicate map
+    Vec_Int_t *vPredicateStatus; // temp variable to record the status of predicate variables for every flop
     // statistics
     int nBlocks; // the number of times blockState was called
     int nObligs; // the number of proof obligations derived
