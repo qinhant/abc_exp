@@ -739,12 +739,13 @@ Pdr_Set_t *Pdr_ManPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
             pCubePredicate->Lits[i] = Abc_Var2Lit(RegId, Abc_LitIsCompl(pCube->Lits[i]));
             pCubePredicate->nLits++;
             pCubePredicate->Sign |= ((word)1) << (pCubePredicate->Lits[i] % 63);
+            // Abc_Print(1, "1 Literal %d \n", RegId);
         }
         else if (Vec_IntEntry(p->vPredicateStatus, RegId) > 0)
         {
-            PredicateReg = Vec_IntEntry(p->vEquivMap, RegId);
-            if (Vec_IntEntry(p->vPredicateStatus, PredicateReg) != -3)
+            if (Vec_IntEntry(p->vPredicateStatus, PredicateReg) != -3 || Vec_IntEntry(p->vPredicateStatus, SymReg) == 0)
             {
+                // Abc_Print(1, "2 Literal %d \n", RegId);
                 pCubePredicate->Lits[i] = Abc_Var2Lit(RegId, Abc_LitIsCompl(pCube->Lits[i]));
                 pCubePredicate->nLits++;
                 pCubePredicate->Sign |= ((word)1) << (pCubePredicate->Lits[i] % 63);
@@ -955,7 +956,7 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
                 // try removing this literal
                 Lit = pCubeMin->Lits[i];
                 pCubeMin->Lits[i] = -1;
-                RetValue = Pdr_ManCheckCube(p, k, pCubeMin, NULL, p->pPars->nConfLimit, 0, 1);
+                RetValue = Pdr_ManCheckCube(p, k, pCubeMin, NULL, p->pPars->nConfLimit, 0, !p->pPars->fSimpleGeneral);
                 if (RetValue == -1)
                 {
                     Pdr_SetDeref(pCubeMin);
@@ -980,6 +981,7 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
         pCubePredicate = Pdr_ManPredicateReplace(p, k, pCubeMin);
     if (pCubePredicate != NULL)
     {
+        RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 0, 1);
         if (p->pPars->fVeryVerbose)
         {
             Abc_Print(1, "Original cube ");
@@ -988,8 +990,9 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
             Abc_Print(1, "Predicate cube ");
             Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
             Abc_Print(1, "\n");
+            if (RetValue && p->pPars->fVeryVerbose)
+                Abc_Print(1, "Successful Replacement\n");
         }
-        RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 0, 1);
         if (RetValue == -1)
         {
             Pdr_SetDeref(pCubeMin);

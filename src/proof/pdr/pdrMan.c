@@ -254,7 +254,7 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
     int flop;
     int symmetry;
     int predicate;
-    char line[100];
+    char line[256];
     if (fgets(line, sizeof(line), pFile) == NULL)
     {
         perror("Error reading the first line");
