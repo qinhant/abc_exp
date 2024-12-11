@@ -78,8 +78,11 @@ void Pdr_ManSetDefaultParams(Pdr_Par_t *pPars)
     pPars->nFailOuts = 0;          // the number of disproved outputs
     pPars->nDropOuts = 0;          // the number of timed out outputs
     pPars->timeLastSolved = 0;     // last one solved
+    pPars->fUseSymmetry = 0;
+    pPars->fPredicateReplace = 0;
     pPars->pInvFileName = NULL;    // invariant file name
     pPars->pPriFileName = NULL;    // priority file name
+    pPars->pRelFileName = NULL;    // Relation file name
 }
 
 /**Function*************************************************************
@@ -693,7 +696,7 @@ Pdr_Set_t *Pdr_ManPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
         assert(RegId < Vec_IntSize(p->vSymMap) && 0 <= RegId);
         if (Vec_IntEntry(p->vEquivMap, RegId) < 0)
         {
-            p->vPredicateStatus->pArray[RegId] = -1; // -1 means this variable does not have equivalence predicates
+            p->vPredicateStatus->pArray[RegId] = -1; // -1 means this variable does not have equivalence predicates and should be kept in the cube
         }
         else
         {
@@ -734,34 +737,37 @@ Pdr_Set_t *Pdr_ManPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
         RegId = Abc_Lit2Var(pCube->Lits[i]);
         SymReg = Vec_IntEntry(p->vSymMap, RegId);
         PredicateReg = Vec_IntEntry(p->vEquivMap, RegId);
-        if (Vec_IntEntry(p->vPredicateStatus, RegId) == -1)
-        {
-            pCubePredicate->Lits[i] = Abc_Var2Lit(RegId, Abc_LitIsCompl(pCube->Lits[i]));
-            pCubePredicate->nLits++;
-            pCubePredicate->Sign |= ((word)1) << (pCubePredicate->Lits[i] % 63);
-            // Abc_Print(1, "1 Literal %d \n", RegId);
-        }
-        else if (Vec_IntEntry(p->vPredicateStatus, RegId) > 0)
+
+        if (Vec_IntEntry(p->vPredicateStatus, RegId) > 0)
         {
             if (Vec_IntEntry(p->vPredicateStatus, PredicateReg) != -3 || Vec_IntEntry(p->vPredicateStatus, SymReg) == 0)
             {
-                // Abc_Print(1, "2 Literal %d \n", RegId);
-                pCubePredicate->Lits[i] = Abc_Var2Lit(RegId, Abc_LitIsCompl(pCube->Lits[i]));
+                pCubePredicate->Lits[pCubePredicate->nLits] = Abc_Var2Lit(RegId, Abc_LitIsCompl(pCube->Lits[i]));
+                pCubePredicate->Sign |= ((word)1) << (pCube->Lits[i] % 63);
                 pCubePredicate->nLits++;
-                pCubePredicate->Sign |= ((word)1) << (pCubePredicate->Lits[i] % 63);
             }
             else
             {
                 // Set predicate variable to 1
-                pCubePredicate->Lits[i] = Abc_Var2Lit(PredicateReg, 0);
+                pCubePredicate->Lits[pCubePredicate->nLits] = Abc_Var2Lit(PredicateReg, 0);
+                pCubePredicate->Sign |= ((word)1) << (pCubePredicate->Lits[pCubePredicate->nLits] % 63);
                 pCubePredicate->nLits++;
-                pCubePredicate->Sign |= ((word)1) << (pCubePredicate->Lits[i] % 63);
                 isDiff = 1;
+
+                // Skip the symmetric variable and the predicate variable
+                p->vPredicateStatus->pArray[SymReg] = -4;
+                p->vPredicateStatus->pArray[PredicateReg] = -4;
             }
+        }
+        else if (Vec_IntEntry(p->vPredicateStatus, RegId) == -1)
+        {
+            pCubePredicate->Lits[pCubePredicate->nLits] = Abc_Var2Lit(RegId, Abc_LitIsCompl(pCube->Lits[i]));
+            pCubePredicate->Sign |= ((word)1) << (pCube->Lits[i] % 63);
+            pCubePredicate->nLits++;
         }
     }
 
-    pCubePredicate->nTotal = pCubePredicate->nLits;
+    pCubePredicate->nTotal = pCubePredicate->nLits + pCube->nTotal - pCube->nLits;
 
     if (isDiff)
     {
@@ -977,11 +983,11 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
             }
     }
 
-    if (p->pPars->pRelFileName != NULL)
+    if (p->pPars->pRelFileName != NULL && p->pPars->fPredicateReplace)
         pCubePredicate = Pdr_ManPredicateReplace(p, k, pCubeMin);
     if (pCubePredicate != NULL)
     {
-        RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 0, 1);
+        RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0);
         if (p->pPars->fVeryVerbose)
         {
             Abc_Print(1, "Original cube ");
@@ -1042,7 +1048,7 @@ Pdr_Set_t *Pdr_ManSymmetricCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
 
     pCubeSym = (Pdr_Set_t *)ABC_ALLOC(char, sizeof(Pdr_Set_t) + (pCube->nTotal) * sizeof(int));
     pCubeSym->nLits = pCube->nLits;
-    pCubeSym->nTotal = pCube->nLits;
+    pCubeSym->nTotal = pCube->nTotal;
     pCubeSym->nRefs = 1;
     pCubeSym->Sign = 0;
 
@@ -1179,7 +1185,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
             }
             Vec_VecPush(p->vClauses, k, pCubeMin); // consume ref
             p->nCubes++;
-            if (p->pPars->pRelFileName != NULL)
+            if (p->pPars->pRelFileName != NULL && p->pPars->fUseSymmetry)
                 pCubeMinSym = Pdr_ManSymmetricCube(p, k, pCubeMin);
             else
                 pCubeMinSym = NULL;

@@ -1,6 +1,6 @@
 
-CC   := gcc
-CXX  := g++
+CC   := gcc -g -Wall 
+CXX  := g++ -g -Wall 
 AR   := ar
 LD   := $(CXX)
 
