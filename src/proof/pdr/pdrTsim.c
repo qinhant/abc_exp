@@ -350,7 +350,7 @@ void Pdr_ManPrintCex( Aig_Man_t * pAig, Vec_Int_t * vCiObjs, Vec_Int_t * vCiVals
 ***********************************************************************/
 Pdr_Set_t * Pdr_ManTernarySim( Pdr_Man_t * p, int k, Pdr_Set_t * pCube )
 {
-    Abc_Print(1, "point 0\n");
+    // Abc_Print(1, "point 0\n");
     Pdr_Set_t * pRes;
     Vec_Int_t * vPrio   = p->vPrio;    // priority flops (flop indices)
     Vec_Int_t * vPiLits = p->vLits;    // array of literals (0/1 PI values)
@@ -382,7 +382,7 @@ Pdr_Set_t * Pdr_ManTernarySim( Pdr_Man_t * p, int k, Pdr_Set_t * pCube )
                 continue;
             pObj = Saig_ManLi(p->pAig, (pCube->Lits[i] >> 1));
             Vec_IntPush( vCoObjs, Aig_ObjId(pObj) );
-            Abc_Print(1, "point 0.0%d, nlits: %d\n", i, pCube->nLits);
+            // Abc_Print(1, "point 0.0%d, nlits: %d\n", i, pCube->nLits);
         }
     }
 if ( p->pPars->fVeryVerbose )
@@ -395,25 +395,25 @@ else
 Abc_Print( 1, " in frame %d.\n", k );
 }
 
-Abc_Print(1, "point 0.5\n");
+// Abc_Print(1, "point 0.5\n");
 
     // collect CI objects
     Pdr_ManCollectCone( p->pAig, vCoObjs, vCiObjs, vNodes );
-    Abc_Print(1, "point 0.6\n");
+    // Abc_Print(1, "point 0.6\n");
     // collect values
     Pdr_ManCollectValues( p, k, vCiObjs, vCiVals );
-    Abc_Print(1, "point 0.7\n");
+    // Abc_Print(1, "point 0.7\n");
     Pdr_ManCollectValues( p, k, vCoObjs, vCoVals );
-    Abc_Print(1, "point 0.8\n");
+    // Abc_Print(1, "point 0.8\n");
     // simulate for the first time
 if ( p->pPars->fVeryVerbose ){
-    Abc_Print(1, "point 1\n");
+    // Abc_Print(1, "point 1\n");
 Pdr_ManPrintCex( p->pAig, vCiObjs, vCiVals, NULL );
-Abc_Print(1, "point 2\n");
+// Abc_Print(1, "point 2\n");
 }
     RetValue = Pdr_ManSimDataInit( p->pAig, vCiObjs, vCiVals, vNodes, vCoObjs, vCoVals, NULL );
     assert( RetValue );
-    Abc_Print(1, "point 3\n");
+    // Abc_Print(1, "point 3\n");
     // iteratively remove flops
     if ( p->pPars->fFlopPrio )
     {
@@ -473,17 +473,17 @@ Abc_Print(1, "point 2\n");
                 Pdr_ManExtendUndo( p->pAig, vUndo );
         }
     }
-    Abc_Print(1, "point 4\n");
+    // Abc_Print(1, "point 4\n");
 
     if (p->pPars->fVeryVerbose)
         Pdr_ManPrintCex(p->pAig, vCiObjs, vCiVals, vCi2Rem);
-    Abc_Print(1, "point 4.1\n");
+    // Abc_Print(1, "point 4.1\n");
     RetValue = Pdr_ManSimDataInit( p->pAig, vCiObjs, vCiVals, vNodes, vCoObjs, vCoVals, vCi2Rem );
     assert( RetValue );
 
     // derive the set of resulting registers
     Pdr_ManDeriveResult( p->pAig, vCiObjs, vCiVals, vCi2Rem, vRes, vPiLits );
-    Abc_Print(1, "point 4.2\n");
+    // Abc_Print(1, "point 4.2\n");
     assert( Vec_IntSize(vRes) > 0 );
     //p->tTsim += Abc_Clock() - clk;
 
@@ -504,7 +504,7 @@ Abc_Print(1, "point 2\n");
     //ZH: Disabled assertion because this invariant doesn't hold with down
     //because of the join operation which can bring in initial states
     //assert( k == 0 || !Pdr_SetIsInit(pRes, -1) );
-    Abc_Print(1, "point 5\n");
+    // Abc_Print(1, "point 5\n");
     return pRes;
 }
 
