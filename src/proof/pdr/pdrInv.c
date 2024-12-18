@@ -528,6 +528,12 @@ void Pdr_ManVerifyInvariant( Pdr_Man_t * p )
         RetValue = sat_solver_solve( pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits), 0, 0, 0, 0 );
         if ( RetValue != l_False )
         {
+            if (p->pPars->fVeryVerbose)
+            {
+                Abc_Print(1, "Failing cube is");
+                Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
+                Abc_Print(1, " \n");
+            }
             Abc_Print( 1, "Verification of clause %d failed.\n", i );
             Counter++;
         }
@@ -774,7 +780,9 @@ int Pdr_InvCheck_int( Gia_Man_t * p, Vec_Int_t * vInv, int fVerbose, sat_solver 
             continue;
         assert( status == l_True );
         if ( fVerbose )
+        {
             Abc_Print(1, "Inductiveness check failed for clause %d.\n", i );
+        }
         nFailed++;
         if ( fSkip )
         {
