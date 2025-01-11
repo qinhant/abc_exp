@@ -143,6 +143,10 @@ struct Pdr_Man_t_
     Vec_Int_t *vSymMap;   // flop symmetry map
     Vec_Int_t *vEquivMap; // flop equivalence predicate map
     Vec_Int_t *vPredicateStatus; // temp variable to record the status of predicate variables for every flop
+    Vec_Int_t *vPredicateScore;  // scores for generalization of predicate replacement
+    Vec_Int_t *vPredicateRegCnt; // map from the predicate register to the # of register copies 
+    int nPredicates;             // number of predicate registers
+    
     // statistics
     int nBlocks; // the number of times blockState was called
     int nObligs; // the number of proof obligations derived
@@ -161,6 +165,7 @@ struct Pdr_Man_t_
     int nQueLim;
     int nXsimRuns;
     int nXsimLits;
+    int nPCubes; // the number of cubes strengthened with predicates
     // runtime
     abctime timeToStop;
     abctime timeToStopOne;
@@ -243,6 +248,7 @@ extern Pdr_Set_t *Txs3_ManTernarySim(Txs3_Man_t *p, int k, Pdr_Set_t *pCube);
 extern Pdr_Set_t *Pdr_SetAlloc(int nSize);
 extern Pdr_Set_t *Pdr_SetCreate(Vec_Int_t *vLits, Vec_Int_t *vPiLits);
 extern Pdr_Set_t *Pdr_SetCreateFrom(Pdr_Set_t *pSet, int iRemove);
+extern Pdr_Set_t *Pdr_SetSkipCreate( Pdr_Set_t * pSet, int nSkips);
 extern Pdr_Set_t *Pdr_SetCreateSubset(Pdr_Set_t *pSet, int *pLits, int nLits);
 extern Pdr_Set_t *Pdr_SetDup(Pdr_Set_t *pSet);
 extern Pdr_Set_t *Pdr_SetRef(Pdr_Set_t *p);
@@ -266,6 +272,7 @@ extern void Pdr_QueueClean(Pdr_Man_t *p);
 extern void Pdr_QueuePush(Pdr_Man_t *p, Pdr_Obl_t *pObl);
 extern void Pdr_QueuePrint(Pdr_Man_t *p);
 extern void Pdr_QueueStop(Pdr_Man_t *p);
+extern int  Pdr_ManIsPredicate(Pdr_Man_t *p, int regId);
 
 ABC_NAMESPACE_HEADER_END
 

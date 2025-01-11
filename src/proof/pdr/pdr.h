@@ -83,6 +83,7 @@ struct Pdr_Par_t_
   Vec_Int_t *vOutMap;                   // in the multi-output mode, contains status for each PO (0 = sat; 1 = unsat; negative = undecided)
   int fUseSymmetry;                     // Use symmetric cube
   int fPredicateReplace;                // Do the predicate cube replacement
+  int fIterativePredicate;              // Do the predicate cube replacement iteratively
   char *pInvFileName;                   // invariable file name
   char *pPriFileName;                   // priority file name
   char *pRelFileName;                   // relation file name
