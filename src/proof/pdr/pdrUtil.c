@@ -129,6 +129,41 @@ Pdr_Set_t * Pdr_SetCreateFrom( Pdr_Set_t * pSet, int iRemove )
   SeeAlso     []
 
 ***********************************************************************/
+Pdr_Set_t * Pdr_SetSkipCreate( Pdr_Set_t * pSet, int nSkips)
+{
+    Pdr_Set_t * p;
+    int i, k = 0;
+    assert( nSkips >= 0 && nSkips < pSet->nLits );
+    p = (Pdr_Set_t *)ABC_ALLOC( char, sizeof(Pdr_Set_t) + (pSet->nTotal - nSkips) * sizeof(int) );
+    p->nLits  = pSet->nLits - nSkips;
+    p->nTotal = pSet->nTotal - nSkips;
+    p->nRefs  = 1;
+    p->Sign   = 0;
+    for ( i = 0; i < pSet->nTotal; i++ )
+    {
+        if ( pSet->Lits[i] == -1 ) // skip
+            continue;
+        p->Lits[k++] = pSet->Lits[i];
+        if ( i >= pSet->nLits )
+            continue;
+        p->Sign   |= ((word)1 << (pSet->Lits[i] % 63));
+    }
+    // printf("k=%i p->nTotal=%i nTotal=%i Skips=%i\n", k, pSet->nTotal, p->nTotal, nSkips);
+    assert( k == p->nTotal );
+    return p;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
 Pdr_Set_t * Pdr_SetCreateSubset( Pdr_Set_t * pSet, int * pLits, int nLits )
 {
     Pdr_Set_t * p;
@@ -790,6 +825,26 @@ int Pdr_NtkFindSatAssign_rec( Aig_Man_t * pAig, Aig_Obj_t * pNode, int Value, Pd
     else
         return Pdr_NtkFindSatAssign_rec(pAig, Aig_ObjFanin0(pNode), Aig_ObjFaninC0(pNode), pCube, Heur);
 }
+
+
+
+/**Function*************************************************************
+
+  Synopsis    [Helper function for predicate replacement. Check if a register is a predicate register.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+int Pdr_ManIsPredicate(Pdr_Man_t *p, int regId){
+    assert(regId >= 0 && regId < Vec_IntSize(p->vPredicateScore));
+    return Vec_IntEntry(p->vPredicateScore, regId) > 0;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

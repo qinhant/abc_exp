@@ -30345,7 +30345,7 @@ int Abc_CommandPdr(Abc_Frame_t *pAbc, int argc, char **argv)
     int c;
     Pdr_ManSetDefaultParams(pPars);
     Extra_UtilGetoptReset();
-    while ((c = Extra_UtilGetopt(argc, argv, "MFCDQTHGSLIPRaxrmuyfqipdegjonctkvwzhsl")) != EOF)
+    while ((c = Extra_UtilGetopt(argc, argv, "MFCDQTHGSLIPRaxrmuyfqipdegjonctkvwzhslb")) != EOF)
     {
         switch (c)
         {
@@ -30556,6 +30556,9 @@ int Abc_CommandPdr(Abc_Frame_t *pAbc, int argc, char **argv)
         case 'l':
             pPars->fPredicateReplace ^= 1;
             break;
+        case 'b':
+            pPars->fIterativePredicate ^= 1;
+            break;
         case 'h':
         default:
             goto usage;
@@ -30639,6 +30642,7 @@ usage:
     Abc_Print(-2, "\t-z     : toggle suppressing report about solved outputs [default = %s]\n", pPars->fNotVerbose ? "yes" : "no");
     Abc_Print(-2, "\t-s     : toggle using symmetric cube after generalization [default = %s]\n", pPars->fUseSymmetry ? "yes" : "no");
     Abc_Print(-2, "\t-l     : toggle using predicate replacement in generalizaton [default = %s]\n", pPars->fPredicateReplace ? "yes" : "no");
+    Abc_Print(-2, "\t-b     : toggle using iterative generalization for predicate replacement [default = %s]\n", pPars->fIterativePredicate ? "yes" : "no");
     Abc_Print(-2, "\t-h     : print the command usage\n\n");
     Abc_Print(-2, "\t* Implementation of switches -S, -n, and -c is contributed by Zyad Hassan.\n");
     Abc_Print(-2, "\t  The theory and experiments supporting this work can be found in the following paper:\n");

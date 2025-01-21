@@ -263,13 +263,27 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
     }
     p->vSymMap = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vEquivMap = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vPredicateScore = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vPredicateRegCnt = Vec_IntStart(Aig_ManRegNum(pAig));
+
     while (fgets(line, sizeof(line), pFile))
     {
         sscanf(line, "%d %d %d", &flop, &symmetry, &predicate);
         printf("flop: %d, symmetry: %d, predicate: %d\n", flop, symmetry, predicate);
         p->vSymMap->pArray[flop] = symmetry;
         p->vEquivMap->pArray[flop] = predicate;
+        if (predicate != -1){
+            Vec_IntAddToEntry(p->vPredicateRegCnt, predicate, 1);
+            // static scoring based on reg count for now
+            Vec_IntAddToEntry(p->vPredicateScore, predicate, 1);
+        }
     }
+    int i, entry;
+    Vec_IntForEachEntry(p->vPredicateRegCnt, entry, i){
+        if (entry > 0) 
+            p->nPredicates++;
+    }
+
     fclose(pFile);
     return 1;
 }
@@ -382,6 +396,7 @@ void Pdr_ManStop(Pdr_Man_t *p)
         ABC_PRTSP("Containment", p->tContain, p->tTotal);
         ABC_PRTSP("CNF compute", p->tCnf, p->tTotal);
         ABC_PRTSP("Refinement ", p->tAbs, p->tTotal);
+        ABC_PRTSP("Predicate  ", p->nPCubes, p->nCubes);
         ABC_PRTSP("TOTAL      ", p->tTotal, p->tTotal);
         fflush(stdout);
     }
@@ -438,6 +453,17 @@ void Pdr_ManStop(Pdr_Man_t *p)
         Aig_ManFanoutStop(p->pAig);
     if (p->pAig->pTerSimData != NULL)
         ABC_FREE(p->pAig->pTerSimData);
+    if (p->vEquivMap != NULL)
+        Vec_IntFree(p->vEquivMap);
+    if (p->vSymMap != NULL)
+        Vec_IntFree(p->vSymMap);
+    if (p->vPredicateStatus != NULL)
+        Vec_IntFree(p->vPredicateStatus);
+    if (p->vPredicateScore != NULL)
+        Vec_IntFree(p->vPredicateScore);
+    if (p->vPredicateRegCnt != NULL)
+        Vec_IntFree(p->vPredicateRegCnt);
+
     ABC_FREE(p);
 }
 
