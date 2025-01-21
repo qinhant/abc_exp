@@ -98,7 +98,23 @@ sat_solver *Pdr_ManFetchSolver(Pdr_Man_t *p, int k)
     // add the clauses
     Vec_VecForEachLevelStart(p->vClauses, vArrayK, i, k)
         Vec_PtrForEachEntry(Pdr_Set_t *, vArrayK, pCube, j)
+        {
+            int isEmpty = 1;
+            for (int j = 0; j < pCube->nLits; j++)
+            {
+                if (pCube->Lits[j] != -1)
+                {
+                    isEmpty = 0;
+                    break;
+                }
+            }
+            if (isEmpty)
+            {
+                Abc_Print(1, "Empty Cube found at frame %d\n", k);
+                Pdr_ManPrintClauses(p, 0);
+            }
             Pdr_ManSolverAddClause(p, k, pCube);
+        }
     return pSat;
 }
 
@@ -150,7 +166,9 @@ Vec_Int_t *Pdr_ManCubeToLits(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, int fCompl, 
     for (i = 0; i < pCube->nLits; i++)
     {
         if (pCube->Lits[i] == -1)
+        {
             continue;
+        }
         if (fNext)
             pObj = Saig_ManLi(p->pAig, Abc_Lit2Var(pCube->Lits[i]));
         else
@@ -159,6 +177,12 @@ Vec_Int_t *Pdr_ManCubeToLits(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, int fCompl, 
         assert(iVar >= 0);
         iVarMax = Abc_MaxInt(iVarMax, iVar);
         Vec_IntPush(p->vLits, Abc_Var2Lit(iVar, fCompl ^ Abc_LitIsCompl(pCube->Lits[i])));
+    }
+    if (p->vLits->nSize == 0)
+    {
+        Abc_Print(1, "Abnormal cube ");
+        Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
+        Abc_Print(1, "\n");
     }
     //    sat_solver_setnvars( Pdr_ManSolver(p, k), iVarMax + 1 );
     p->tCnf += Abc_Clock() - clk;
@@ -297,7 +321,9 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
     int Lit, RetValue;
     abctime clk, Limit;
     p->nCalls++;
+    // Abc_Print(1, "Fetch Solver\n");
     pSat = Pdr_ManFetchSolver(p, k);
+    // Abc_Print(1, "Solver Fetched\n");
     if (pCube == NULL) // solve the property
     // This is checking whether !P && R_k is satisfiable, it does not involve transition relation
     {

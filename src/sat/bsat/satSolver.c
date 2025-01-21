@@ -1736,6 +1736,10 @@ int sat_solver_addclause(sat_solver* s, lit* begin, lit* end)
     lit *i,*j;
     int maxvar;
     lit last;
+    if (begin >= end)
+    {
+        printf("begin: %d, end: %d", begin, end);
+    }
     assert( begin < end );
     if ( s->fPrintClause )
     {

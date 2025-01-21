@@ -530,7 +530,7 @@ void Pdr_ManVerifyInvariant( Pdr_Man_t * p )
         {
             if (p->pPars->fVeryVerbose)
             {
-                Abc_Print(1, "Failing cube is");
+                Abc_Print(1, "Failing cube ");
                 Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
                 Abc_Print(1, " \n");
             }
