@@ -402,6 +402,76 @@ int *Pdr_ManSortByPriority(Pdr_Man_t *p, Pdr_Set_t *pCube)
     return pArray;
 }
 
+/**Function*************************************************************
+
+  Synopsis    [Return 1 if regId1 should be placed after regId2.]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Pdr_ManPredicateCmp(Pdr_Man_t *p, int regId1, int regId2)
+{
+
+    // Abc_Print(1, "%2d %2d\n", regId1, regId2);
+    if (Pdr_ManIsPredicate(p, regId1) && Pdr_ManIsPredicate(p, regId2))
+    {
+        if (Vec_IntEntry(p->vPredicateScore, regId1) < Vec_IntEntry(p->vPredicateScore, regId2))
+            return 1;
+        if (Vec_IntEntry(p->vPredicateScore, regId1) == Vec_IntEntry(p->vPredicateScore, regId2) &&
+            regId1 > regId2)
+            return 1;
+    }
+    else if (Pdr_ManIsPredicate(p, regId1))
+    {
+        int score1 = Vec_IntEntry(p->vPredicateScore, regId1);
+        if (Vec_IntEntry(p->vEquivMap, regId2) != -1) // regId2 is a register copy
+        {
+            int score2 = Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId2));
+            if (score1 < score2)
+                return 1;
+            if (score1 == score2 && regId1 < Vec_IntEntry(p->vEquivMap, regId2))
+                return 1;
+        }
+    }
+    else if (Pdr_ManIsPredicate(p, regId2))
+    {
+        if (Vec_IntEntry(p->vEquivMap, regId1) == regId2)
+            return 1;
+        int score2 = Vec_IntEntry(p->vPredicateScore, regId2);
+        if (Vec_IntEntry(p->vEquivMap, regId1) != -1) // regId1 is a register copy
+        {
+            int score1 = Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId1));
+            if (score1 < score2)
+                return 1;
+            if (score1 == score2 && Vec_IntEntry(p->vEquivMap, regId1) < regId2)
+                return 1;
+        }
+    }
+    else
+    { // both are not predicate register
+        if (Vec_IntEntry(p->vEquivMap, regId1) != -1 &&
+            Vec_IntEntry(p->vEquivMap, regId2) != -1) // both are register copies
+        {
+            if (Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId1)) <
+                Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId2)))
+                return 1;
+            if (Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId1)) ==
+                    Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId2)) &&
+                Vec_IntEntry(p->vEquivMap, regId1) < Vec_IntEntry(p->vEquivMap, regId2))
+                return 1;
+        }
+        if (Vec_IntEntry(p->vEquivMap, regId1) == -1 &&
+            Vec_IntEntry(p->vEquivMap, regId2) != -1) // regId1 is global
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 /**Function*************************************************************
 
@@ -438,71 +508,7 @@ void Pdr_ManSortByPredPriority(Pdr_Man_t *p, Pdr_Set_t *pCube)
 }
 
 
-/**Function*************************************************************
 
-  Synopsis    [Return 1 if regId1 should be placed after regId2.]
-
-  Description []
-
-  SideEffects []
-
-  SeeAlso     []
-
-***********************************************************************/
-int Pdr_ManPredicateCmp(Pdr_Man_t *p, int regId1, int regId2){
-
-    // Abc_Print(1, "%2d %2d\n", regId1, regId2);
-    if (Pdr_ManIsPredicate(p, regId1) && Pdr_ManIsPredicate(p, regId2)){
-        if ( Vec_IntEntry(p->vPredicateScore, regId1) < Vec_IntEntry(p->vPredicateScore, regId2) )
-            return 1;
-        if ( Vec_IntEntry(p->vPredicateScore, regId1) == Vec_IntEntry(p->vPredicateScore, regId2) &&
-             regId1 > regId2)
-            return 1;
-    }
-    else if ( Pdr_ManIsPredicate(p, regId1) ){
-        int score1 = Vec_IntEntry(p->vPredicateScore, regId1);
-        if ( Vec_IntEntry(p->vEquivMap, regId2) != -1) // regId2 is a register copy 
-        {
-            int score2 = Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId2));
-            if ( score1 < score2)
-                return 1;
-            if ( score1 == score2 && regId1 < Vec_IntEntry(p->vEquivMap, regId2) )
-                return 1;
-        }
-    }
-    else if ( Pdr_ManIsPredicate(p, regId2) ){
-        if ( Vec_IntEntry(p->vEquivMap, regId1) == regId2 )
-            return 1;
-        int score2 = Vec_IntEntry(p->vPredicateScore, regId2);
-        if ( Vec_IntEntry(p->vEquivMap, regId1) != -1) // regId1 is a register copy 
-        {
-            int score1 = Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId1));
-            if ( score1 < score2)
-                return 1;
-            if ( score1 == score2 && Vec_IntEntry(p->vEquivMap, regId1) < regId2 )
-                return 1;
-        }
-    }
-    else{ // both are not predicate register
-        if ( Vec_IntEntry(p->vEquivMap, regId1) != -1 &&
-             Vec_IntEntry(p->vEquivMap, regId2) != -1 ) // both are register copies
-        {
-            if ( Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId1)) < 
-                 Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId2)) )
-                return 1;
-            if ( Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId1)) ==
-                 Vec_IntEntry(p->vPredicateScore, Vec_IntEntry(p->vEquivMap, regId2)) &&
-                 Vec_IntEntry(p->vEquivMap, regId1) < Vec_IntEntry(p->vEquivMap, regId2))
-                return 1;
-        }
-        if ( Vec_IntEntry(p->vEquivMap, regId1) == -1 &&
-             Vec_IntEntry(p->vEquivMap, regId2) != -1 ) // regId1 is global
-        {
-            return 1;
-        }
-    }
-    return 0;
-}
 
 /**Function*************************************************************
 
