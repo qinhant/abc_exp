@@ -1611,21 +1611,21 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 pCubeMinSym = NULL;
             if (pCubeMinSym)
             {
-                Abc_Print(1, "Checking symmetric cube ");
-                Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
-                Abc_Print(1, " from frame %d to %d.\n", k2, k);
-                for (k2 = pThis->iFrame; k2 < kMax; k2++)
-                {
-                    RetValue = Pdr_ManCheckCube(p, k2, pCubeMinSym, NULL, 0, 0, 1);
-                    if (RetValue == -1)
-                    {
-                        Pdr_OblDeref(pThis);
-                        return -1;
-                    }
-                    if (!RetValue)
-                        break;
-                }
-                // RetValue = Pdr_ManCheckCube(p, k-1, pCubeMinSym, NULL, 0, 0, 1);
+                // Abc_Print(1, "Checking symmetric cube ");
+                // Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
+                // Abc_Print(1, " from frame %d to %d.\n", k2, k);
+                // for (k2 = pThis->iFrame; k2 < kMax; k2++)
+                // {
+                //     RetValue = Pdr_ManCheckCube(p, k2, pCubeMinSym, NULL, 0, 0, 1);
+                //     if (RetValue == -1)
+                //     {
+                //         Pdr_OblDeref(pThis);
+                //         return -1;
+                //     }
+                //     if (!RetValue)
+                //         break;
+                // }
+                RetValue = Pdr_ManCheckCube(p, k-1, pCubeMinSym, NULL, 0, 0, 1);
                 if (RetValue == -1)
                 {
                     Pdr_OblDeref(pThis);
@@ -1664,7 +1664,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
             // add clause
             for (i = 1; i <= k; i++)
             {
-                Pdr_ManSolverAddClause(p, i, pCubeMin);
+                // Pdr_ManSolverAddClause(p, i, pCubeMin);
                 if (pCubeMinSym)
                     Pdr_ManSolverAddClause(p, i, pCubeMinSym);
             }
