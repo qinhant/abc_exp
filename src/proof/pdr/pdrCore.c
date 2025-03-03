@@ -1400,72 +1400,70 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
             }
     }
 
-    if (p->pPars->pRelFileName != NULL && p->pPars->fPredicateReplace){
-        if (!p->pPars->fIterativePredicate){
-            pCubePredicate = Pdr_ManPredicateReplace(p, k, pCubeMin);
-            if (pCubePredicate != NULL)
-            {
-                // NULL or &pPred according to skipDown?
-                RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0);
-                if (p->pPars->fVeryVerbose)
-                {
-                    Abc_Print(1, "Original cube ");
-                    Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
-                    Abc_Print(1, "\n");
-                    Abc_Print(1, "Predicate cube ");
-                    Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
-                    Abc_Print(1, "\n");
-                    // if (RetValue && p->pPars->fVeryVerbose)
-                    //     Abc_Print(1, "Successful Replacement\n");
-                }
-                if (RetValue == -1)
-                {
-                    Pdr_SetDeref(pCubeMin);
-                    Pdr_SetDeref(pCubePredicate);
-                    return -1;
-                }
-                else if (RetValue == 1)
-                {
-                    Pdr_SetDeref(pCubeMin);
-                    pCubeMin = pCubePredicate;
-                    if (p->pPars->fVeryVerbose)
-                        Abc_Print(1, "Successful Replacement\n");
-                    p->nPCubes++;
-                }
-                else if (RetValue == 0)
-                    Pdr_SetDeref(pCubePredicate);
-            }
-        }
-        else{ // iterative predicate replacement
-            RetValue = Pdr_ManIterPredicateReplace(p, k, pCubeMin, &pCubePredicate);
-            if (pCubePredicate) 
-                assert( Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0)==1 );
-            if (RetValue == -1){
-                Pdr_SetDeref(pCubeMin);
-                Pdr_SetDeref(pCubePredicate);
-                return -1;
-            }
-            else if (RetValue == 1)
-            {
-                assert(pCubePredicate);
-                if (p->pPars->fVeryVerbose)
-                {
-                    Abc_Print(1, "Original cube ");
-                    Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
-                    Abc_Print(1, "\n");
-                    Abc_Print(1, "Predicate cube ");
-                    Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
-                    Abc_Print(1, "\n");
-                    Abc_Print(1, "Successful Replacement\n");
-                }
-                Pdr_SetDeref(pCubeMin);
-                pCubeMin = pCubePredicate;
-                p->nPCubes++;
-            }
-            else if (RetValue == 0)
-                assert(pCubePredicate==NULL);
-        }
-    }
+    // if (p->pPars->pRelFileName != NULL && p->pPars->fPredicateReplace){
+    //     if (!p->pPars->fIterativePredicate){
+    //         pCubePredicate = Pdr_ManPredicateReplace(p, k, pCubeMin);
+    //         if (pCubePredicate != NULL)
+    //         {
+    //             // NULL or &pPred according to skipDown?
+    //             RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0);
+    //             if (p->pPars->fVeryVerbose)
+    //             {
+    //                 Abc_Print(1, "Original cube ");
+    //                 Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
+    //                 Abc_Print(1, "\n");
+    //                 Abc_Print(1, "Predicate cube ");
+    //                 Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
+    //                 Abc_Print(1, "\n");
+    //             }
+    //             if (RetValue == -1)
+    //             {
+    //                 Pdr_SetDeref(pCubeMin);
+    //                 Pdr_SetDeref(pCubePredicate);
+    //                 return -1;
+    //             }
+    //             else if (RetValue == 1)
+    //             {
+    //                 Pdr_SetDeref(pCubeMin);
+    //                 pCubeMin = pCubePredicate;
+    //                 if (p->pPars->fVeryVerbose)
+    //                     Abc_Print(1, "Successful Replacement\n");
+    //                 p->nPCubes++;
+    //             }
+    //             else if (RetValue == 0)
+    //                 Pdr_SetDeref(pCubePredicate);
+    //         }
+    //     }
+    //     else{ // iterative predicate replacement
+    //         RetValue = Pdr_ManIterPredicateReplace(p, k, pCubeMin, &pCubePredicate);
+    //         if (pCubePredicate) 
+    //             assert( Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0)==1 );
+    //         if (RetValue == -1){
+    //             Pdr_SetDeref(pCubeMin);
+    //             Pdr_SetDeref(pCubePredicate);
+    //             return -1;
+    //         }
+    //         else if (RetValue == 1)
+    //         {
+    //             assert(pCubePredicate);
+    //             if (p->pPars->fVeryVerbose)
+    //             {
+    //                 Abc_Print(1, "Original cube ");
+    //                 Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
+    //                 Abc_Print(1, "\n");
+    //                 Abc_Print(1, "Predicate cube ");
+    //                 Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
+    //                 Abc_Print(1, "\n");
+    //                 Abc_Print(1, "Successful Replacement\n");
+    //             }
+    //             Pdr_SetDeref(pCubeMin);
+    //             pCubeMin = pCubePredicate;
+    //             p->nPCubes++;
+    //         }
+    //         else if (RetValue == 0)
+    //             assert(pCubePredicate==NULL);
+    //     }
+    // }
     if (p->pPars->fVeryVerbose)
     {
         printf("Cube:\n");
@@ -1498,7 +1496,7 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
 int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
 {
     Pdr_Obl_t *pThis;
-    Pdr_Set_t *pPred, *pCubeMin, *pCubeMinSym;
+    Pdr_Set_t *pPred, *pCubeMin, *pCubeMinSym, *pCubePredicate, *pCubePredicateSym;
     int i, k, RetValue, Prio = ABC_INFINITY, Counter = 0;
     int kMax = Vec_PtrSize(p->vSolvers) - 1;
     abctime clk;
@@ -1553,6 +1551,8 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
         // check if the cube holds with relative induction
         pCubeMin = NULL;
         pCubeMinSym = NULL;
+        pCubePredicate = NULL;
+        pCubePredicateSym = NULL;
         RetValue = Pdr_ManGeneralize(p, pThis->iFrame - 1, pThis->pState, &pPred, &pCubeMin);
         if (RetValue == -1) // resource limit is reached
         {
@@ -1603,6 +1603,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 Pdr_ManSolverAddClause(p, i, pCubeMin);
             }
 
+            // Add symmetric cube
             if (p->pPars->pRelFileName != NULL && p->pPars->fUseSymmetry)
             {
                 pCubeMinSym = Pdr_ManSymmetricCube(p, pCubeMin);
@@ -1625,28 +1626,28 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 //     if (!RetValue)
                 //         break;
                 // }
-                RetValue = Pdr_ManCheckCube(p, k-1, pCubeMinSym, NULL, 0, 0, 1);
-                if (RetValue == -1)
-                {
-                    Pdr_OblDeref(pThis);
-                    return -1;
-                }
-                else if (RetValue == 0 && k2 < k)
-                {
-                    Pdr_ManPrintClauses(p, 0);
-                    Abc_Print(1, "Failing symmetric cube ");
-                    Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
-                    Abc_Print(1, " in frame %d.\n", k2);
-                    Pdr_SetDeref(pCubeMinSym);
-                    pCubeMinSym = NULL;
-                }
-                else
-                {
+                // RetValue = Pdr_ManCheckCube(p, k-1, pCubeMinSym, NULL, 0, 0, 1);
+                // if (RetValue == -1)
+                // {
+                //     Pdr_OblDeref(pThis);
+                //     return -1;
+                // }
+                // else if (RetValue == 0 && k2 < k)
+                // {
+                //     Pdr_ManPrintClauses(p, 0);
+                //     Abc_Print(1, "Failing symmetric cube ");
+                //     Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
+                //     Abc_Print(1, " in frame %d.\n", k2);
+                //     Pdr_SetDeref(pCubeMinSym);
+                //     pCubeMinSym = NULL;
+                // }
+                // else
+                // {
                     if (p->pPars->fVeryVerbose)
                     {
                         Abc_Print(1, "Adding symmetric cube ");
                         Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
-                        Abc_Print(1, " to frame %d.\n", k2);
+                        Abc_Print(1, " to frame %d.\n", k);
                     }
                     // set priority flops
                     for (i = 0; i < pCubeMinSym->nLits; i++)
@@ -1659,14 +1660,128 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                     }
                     Vec_VecPush(p->vClauses, k, pCubeMinSym); // consume ref
                     p->nCubes++;
-                }
+
+                    // add clause
+                    for (i = 1; i <= k; i++)
+                    {
+                        Pdr_ManSolverAddClause(p, i, pCubeMinSym);
+                    }
+                // }
             }
-            // add clause
-            for (i = 1; i <= k; i++)
+
+            // Try to compute predicate cube and test them, add them if they can be blocked
+            if (p->pPars->pRelFileName != NULL && p->pPars->fPredicateReplace)
             {
-                // Pdr_ManSolverAddClause(p, i, pCubeMin);
-                if (pCubeMinSym)
-                    Pdr_ManSolverAddClause(p, i, pCubeMinSym);
+                pCubePredicate = NULL;
+                if (!p->pPars->fIterativePredicate)
+                {
+                    pCubePredicate = Pdr_ManPredicateReplace(p, k, pCubeMin);
+                    if (pCubePredicate != NULL)
+                    {
+                        // NULL or &pPred according to skipDown?
+                        RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0);
+                        if (p->pPars->fVeryVerbose)
+                        {
+                            Abc_Print(1, "Original cube ");
+                            Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
+                            Abc_Print(1, "\n");
+                            Abc_Print(1, "Predicate cube ");
+                            Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
+                            Abc_Print(1, "\n");
+                        }
+                        if (RetValue == -1)
+                        {
+                            Pdr_SetDeref(pCubeMin);
+                            Pdr_SetDeref(pCubePredicate);
+                            return -1;
+                        }
+                        else if (RetValue == 0)
+                        {
+                            Pdr_SetDeref(pCubePredicate);
+                            pCubePredicate = NULL;
+                        }
+                    }
+                }
+                else
+                { // iterative predicate replacement
+                    RetValue = Pdr_ManIterPredicateReplace(p, k, pCubeMin, &pCubePredicate);
+                    if (pCubePredicate)
+                        assert(Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0) == 1);
+                    if (RetValue == -1)
+                    {
+                        Pdr_SetDeref(pCubeMin);
+                        Pdr_SetDeref(pCubePredicate);
+                        return -1;
+                    }
+                    else if (RetValue == 0)
+                    {
+                        assert(pCubePredicate == NULL);
+                    }
+                }
+
+                if (pCubePredicate)
+                {
+                    // set priority flops
+                    for (i = 0; i < pCubePredicate->nLits; i++)
+                    {
+                        assert(pCubePredicate->Lits[i] >= 0);
+                        assert((pCubePredicate->Lits[i] / 2) < Aig_ManRegNum(p->pAig));
+                        if ((Vec_IntEntry(p->vPrio, pCubePredicate->Lits[i] / 2) >> p->nPrioShift) == 0)
+                            p->nAbsFlops++;
+                        Vec_IntAddToEntry(p->vPrio, pCubePredicate->Lits[i] / 2, 1 << p->nPrioShift);
+                    }
+                    Vec_VecPush(p->vClauses, k, pCubePredicate); // consume ref
+                    p->nCubes++;
+                    p->nPCubes++;
+                    for (i = 1; i <= k; i++)
+                    {
+                        Pdr_ManSolverAddClause(p, i, pCubePredicate);
+                    }
+                    if (p->pPars->fVeryVerbose)
+                    {
+                        Abc_Print(1, "Original cube ");
+                        Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, "\n");
+                        Abc_Print(1, "Predicate cube ");
+                        Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, "\n");
+                        Abc_Print(1, "Adding predicate cube ");
+                        Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, " to frame %d.\n", k);
+                    }
+                    
+                    // Add symmetric predicate cube
+                    if (p->pPars->pRelFileName != NULL && p->pPars->fUseSymmetry)
+                    {
+                        pCubePredicateSym = Pdr_ManSymmetricCube(p, pCubePredicate);
+                    }
+                    else
+                        pCubePredicateSym = NULL;
+
+                    if (pCubePredicateSym){
+                        if (p->pPars->fVeryVerbose)
+                        {
+                            Abc_Print(1, "Adding symmetric cube ");
+                            Pdr_SetPrint(stdout, pCubePredicateSym, Aig_ManRegNum(p->pAig), NULL);
+                            Abc_Print(1, " to frame %d.\n", k);
+                        }
+                        // set priority flops
+                        for (i = 0; i < pCubePredicateSym->nLits; i++)
+                        {
+                            if ((Vec_IntEntry(p->vPrio, pCubePredicateSym->Lits[i] / 2) >> p->nPrioShift) == 0)
+                                p->nAbsFlops++;
+                            Vec_IntAddToEntry(p->vPrio, pCubePredicateSym->Lits[i] / 2, 1 << p->nPrioShift);
+                        }
+                        Vec_VecPush(p->vClauses, k, pCubePredicateSym); // consume ref
+                        p->nCubes++;
+
+                        // add clause
+                        for (i = 1; i <= k; i++)
+                        {
+                            Pdr_ManSolverAddClause(p, i, pCubePredicateSym);
+                        }
+                    }
+                }
             }
             // schedule proof obligation
             if ((k < kMax || p->pPars->fReuseProofOblig) && !p->pPars->fShortest)
