@@ -269,7 +269,7 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
     while (fgets(line, sizeof(line), pFile))
     {
         sscanf(line, "%d %d %d", &flop, &symmetry, &predicate);
-        printf("flop: %d, symmetry: %d, predicate: %d\n", flop, symmetry, predicate);
+        // printf("flop: %d, symmetry: %d, predicate: %d\n", flop, symmetry, predicate);
         p->vSymMap->pArray[flop] = symmetry;
         p->vEquivMap->pArray[flop] = predicate;
         if (predicate != -1){
@@ -279,10 +279,28 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
         }
     }
     int i, entry;
+    // Abc_Print(1, "Number of flops %d\n", Aig_ManRegNum(pAig));
     Vec_IntForEachEntry(p->vPredicateRegCnt, entry, i){
-        if (entry > 0) 
+        if (entry > 0) {
             p->nPredicates++;
+            // Abc_Print(1, "Predicate %d\n", i);
+        }
     }
+
+    p->vPredicatesSilence = Vec_IntStart(p->nPredicates);
+    int k;
+    // if a register is a predicate then its score is positive, otherwise it is 0
+    Vec_IntForEachEntry(p->vPredicateScore, entry, i){
+        if (entry > 0){
+            p->vPredicatesSilence->pArray[k] = i;
+            k++;
+            // Silence all predicate variables at the beginning
+            p->vIsSilence->pArray[i] = 1;
+            // Abc_Print(1, "Predicate %d\n", i);
+        }
+    }
+
+    p->nSilenced = p->nPredicates;
 
     fclose(pFile);
     return 1;
@@ -355,6 +373,13 @@ Pdr_Man_t *Pdr_ManStart(Aig_Man_t *pAig, Pdr_Par_t *pPars, Vec_Int_t *vPrioInit)
         p->vCexes = Vec_PtrStart(Saig_ManPoNum(p->pAig));
         p->pPars->vOutMap = Vec_IntAlloc(Saig_ManPoNum(pAig));
         Vec_IntFill(p->pPars->vOutMap, Saig_ManPoNum(pAig), -2);
+    }
+
+    p->vIsSilence = Vec_IntStart(Aig_ManRegNum(pAig));
+    if (pPars->pRelFileName == NULL){
+        // p->vPredicatesSilence = Vec_IntStart(0);
+        p->nPredicates = 0;
+        p->nSilenced = 0;
     }
 
     if (pPars->pRelFileName != NULL)

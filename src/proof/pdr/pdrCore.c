@@ -159,6 +159,7 @@ void Pdr_ManSetDefaultParams(Pdr_Par_t *pPars)
 ***********************************************************************/
 Pdr_Set_t *Pdr_ManReduceClause(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
 {
+    // Abc_Print(1, "Current frame is %d\n", k);
     Pdr_Set_t *pCubeMin;
     Vec_Int_t *vLits;
     int i, Entry, nCoreLits, *pCoreLits;
@@ -1480,7 +1481,35 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
     return 1;
 }
 
+int Pdr_RemoveSilence(Pdr_Man_t *p, Pdr_Set_t *pCube)
+{
+    int i = 0;
+    int same = 1;
 
+    while( i < pCube->nLits)
+    {
+        // Abc_Print(1, "i: %d\n", i);
+        if (p->vIsSilence->pArray[pCube->Lits[i]] == 1)
+        {
+            Abc_Print(1, "i: %d; nLits: %d, nTotal: %d\n", i, pCube->nLits, pCube->nTotal);
+            same = 0;
+            pCube->Lits[i] = pCube->Lits[pCube->nLits - 1];
+            pCube->Lits[pCube->nLits - 1] = pCube->Lits[pCube->nTotal - 1];
+            i -= 1;
+            pCube->nLits -= 1;
+            pCube->nTotal -= 1;
+        }
+
+        i++;
+    }
+    if (!same) {
+    Abc_Print(1, "Resultant cube ");
+    Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
+    Abc_Print(1, "\n");
+    }
+
+    return same;
+}
 
 /**Function*************************************************************
 
@@ -1510,8 +1539,9 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
     {
         Counter++;
         pThis = Pdr_QueueHead(p);
-        if (pThis->iFrame == 0 || (p->pPars->fUseAbs && Pdr_SetIsInit(pThis->pState, -1)))
-            return 0;             // SAT
+        Pdr_RemoveSilence(p, pThis->pState);
+        // Pdr_SetPrint(stdout, pThis->pState, Aig_ManRegNum(p->pAig), NULL);
+        if (pThis->iFrame == 0 || (p->pPars->fUseAbs && Pdr_SetIsInit(pThis->pState, -1))) return 0; // SAT
         if (pThis->iFrame > kMax) // finished this level
             return 1;
         if (p->nQueLim && p->nQueCur >= p->nQueLim)
@@ -2246,10 +2276,11 @@ int Pdr_ManSolve(Aig_Man_t *pAig, Pdr_Par_t *pPars)
         if (vPrioInit == NULL)
             return -1;
     }
-
+    Abc_Print(1, "Running PDR by Niklas Een (aka IC3 by Aaron Bradley) with these parameters:\n");
     // Note: the third input here can be an initialized priority array
     p = Pdr_ManStart(pAig, pPars, vPrioInit);
 
+    Abc_Print(1, "Finish pdr start\n");
     RetValue = Pdr_ManSolveInt(p);
     if (RetValue == 0)
         assert(pAig->pSeqModel != NULL || p->vCexes != NULL);
