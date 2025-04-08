@@ -59,6 +59,7 @@ tags
 /abc
 
 /arch_flags
+/arch_flags.dSYM
 
 /cmake
 /cscope

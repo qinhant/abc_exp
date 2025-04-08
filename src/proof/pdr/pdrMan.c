@@ -242,6 +242,7 @@ Vec_Int_t *Pdr_ManDeriveFlopPriorities2(Gia_Man_t *p, int fMuxCtrls)
 ***********************************************************************/
 int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
 {
+    // Abc_Print(1, "I'm here\n");
     FILE *pFile = fopen(pFileName, "r");
     int vFlop;
 
@@ -286,19 +287,29 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
             // Abc_Print(1, "Predicate %d\n", i);
         }
     }
+    
 
-    p->vPredicatesSilence = Vec_IntStart(p->nPredicates);
-    int k;
+    p->vSilenceCube = (Pdr_Set_t *)ABC_ALLOC(char, sizeof(Pdr_Set_t) + (p->nPredicates) * sizeof(int));
+    p->vSilenceCube->nLits = p->nPredicates;
+    p->vSilenceCube->nTotal = p->nPredicates;
+    p->vSilenceCube->nRefs = 1;
+    p->vSilenceCube->Sign = 0;
+
+
+    int k = 0;
     // if a register is a predicate then its score is positive, otherwise it is 0
     Vec_IntForEachEntry(p->vPredicateScore, entry, i){
         if (entry > 0){
-            p->vPredicatesSilence->pArray[k] = i;
-            k++;
             // Silence all predicate variables at the beginning
+            p->vSilenceCube->Lits[k] = Abc_Var2Lit(i, 0);
+            p->vSilenceCube->Sign |= ((word)1) << (p->vSilenceCube->Lits[k] % 63);
+            k++;
             p->vIsSilence->pArray[i] = 1;
             // Abc_Print(1, "Predicate %d\n", i);
         }
     }
+
+    // Pdr_SetPrint(stdout, p->vSilenceCube, Aig_ManRegNum(pAig), NULL);
 
     p->nSilenced = p->nPredicates;
 
@@ -374,7 +385,6 @@ Pdr_Man_t *Pdr_ManStart(Aig_Man_t *pAig, Pdr_Par_t *pPars, Vec_Int_t *vPrioInit)
         p->pPars->vOutMap = Vec_IntAlloc(Saig_ManPoNum(pAig));
         Vec_IntFill(p->pPars->vOutMap, Saig_ManPoNum(pAig), -2);
     }
-
     p->vIsSilence = Vec_IntStart(Aig_ManRegNum(pAig));
     if (pPars->pRelFileName == NULL){
         // p->vPredicatesSilence = Vec_IntStart(0);

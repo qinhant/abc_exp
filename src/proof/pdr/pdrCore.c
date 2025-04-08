@@ -1486,12 +1486,14 @@ int Pdr_RemoveSilence(Pdr_Man_t *p, Pdr_Set_t *pCube)
     int i = 0;
     int same = 1;
 
+    // Abc_Print(1, "Original cube ");
+    // Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
+    // Abc_Print(1, "\n");
     while( i < pCube->nLits)
     {
         // Abc_Print(1, "i: %d\n", i);
-        if (p->vIsSilence->pArray[pCube->Lits[i]] == 1)
+        if (p->vIsSilence->pArray[Abc_Lit2Var(pCube->Lits[i])] == 1)
         {
-            Abc_Print(1, "i: %d; nLits: %d, nTotal: %d\n", i, pCube->nLits, pCube->nTotal);
             same = 0;
             pCube->Lits[i] = pCube->Lits[pCube->nLits - 1];
             pCube->Lits[pCube->nLits - 1] = pCube->Lits[pCube->nTotal - 1];
@@ -1502,13 +1504,86 @@ int Pdr_RemoveSilence(Pdr_Man_t *p, Pdr_Set_t *pCube)
 
         i++;
     }
-    if (!same) {
-    Abc_Print(1, "Resultant cube ");
-    Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
-    Abc_Print(1, "\n");
-    }
+    // if (!same) {
+    // Abc_Print(1, "Resultant cube ");
+    // Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
+    // Abc_Print(1, "\n");
+    // }
 
     return same;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Release a silenced variable]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Pdr_ReleaseReg(Pdr_Man_t *p, int reg)
+{
+    int temp;
+    int i;
+
+    for (i = 0; i < p->vSilenceCube->nLits; i++)
+    {
+        // Search for te register in the silence cube
+        if (Abc_Lit2Var(p->vSilenceCube->Lits[i]) == reg)
+        {
+            // Swap the corresponding literal with the last one
+            temp = p->vSilenceCube->Lits[i];
+            p->vSilenceCube->Lits[i] = p->vSilenceCube->Lits[p->vSilenceCube->nLits - 1];
+            p->vSilenceCube->Lits[p->vSilenceCube->nLits - 1] = temp;
+            p->vSilenceCube->nLits -= 1;
+            p->vSilenceCube->nTotal -= 1;
+            p->vIsSilence->pArray[reg] = 0;
+            p->nSilenced -= 1;
+            return 1;
+        }
+    }
+
+    // If the register is not silenced, then it cannot be released. This call is an illigal call.
+    return 0;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Silence a register]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Pdr_SilenceReg(Pdr_Man_t *p, int reg)
+{
+    int temp;
+    int i;
+
+    for (i = p->nSilenced; i < p->nPredicates; i++)
+    {
+        // Search for te register in the released space of the silence cube
+        if (Abc_Lit2Var(p->vSilenceCube->Lits[i]) == reg)
+        {
+            // add the corresponding literal back to the silenced space
+            temp = p->vSilenceCube->Lits[i];
+            p->vSilenceCube->Lits[i] = p->vSilenceCube->Lits[p->nSilenced];
+            p->vSilenceCube->Lits[p->nSilenced] = temp;
+            p->vSilenceCube->nLits += 1;
+            p->vSilenceCube->nTotal += 1;
+            p->vIsSilence->pArray[reg] = 1;
+            p->nSilenced += 1;
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 /**Function*************************************************************
@@ -1699,6 +1774,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 // }
             }
 
+
             // Try to compute predicate cube and test them, add them if they can be blocked
             if (p->pPars->pRelFileName != NULL && p->pPars->fPredicateReplace)
             {
@@ -1708,6 +1784,22 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                     pCubePredicate = Pdr_ManPredicateReplace(p, k, pCubeMin);
                     if (pCubePredicate != NULL)
                     {
+                        Abc_Print(1, "Number of silenced predicates: %d\n", p->nSilenced);
+                        Abc_Print(1, "Number of predicates: %d\n", p->nPredicates);
+                        // Abc_Print(1, "Length of pCubePredicate: %d\n ", pCubePredicate->nLits);
+                        for (i = 0; i < pCubePredicate->nLits; i++)
+                        {
+                            // Abc_Print(1, "Variable in pCubePredicate: %d\n", Abc_Lit2Var(pCubePredicate->Lits[i]));
+                            // release all the silenced predicates in it
+                            if (p->vIsSilence->pArray[Abc_Lit2Var(pCubePredicate->Lits[i])] == 1)
+                            {
+                                if (Pdr_ReleaseReg(p, Abc_Lit2Var(pCubePredicate->Lits[i])) == 0)
+                                {
+                                    printf("Error: Variable %d is not silenced while vIsSilence is set to 1\n", Abc_Lit2Var(pCubePredicate->Lits[i]));
+                                    assert(0);
+                                }
+                            }
+                        }
                         // NULL or &pPred according to skipDown?
                         RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0);
                         if (p->pPars->fVeryVerbose)
@@ -1749,6 +1841,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                     }
                 }
 
+                // pCubePredicate = NULL;
                 if (pCubePredicate)
                 {
                     // set priority flops
@@ -2280,7 +2373,6 @@ int Pdr_ManSolve(Aig_Man_t *pAig, Pdr_Par_t *pPars)
     // Note: the third input here can be an initialized priority array
     p = Pdr_ManStart(pAig, pPars, vPrioInit);
 
-    Abc_Print(1, "Finish pdr start\n");
     RetValue = Pdr_ManSolveInt(p);
     if (RetValue == 0)
         assert(pAig->pSeqModel != NULL || p->vCexes != NULL);

@@ -145,6 +145,7 @@ Vec_Int_t *Pdr_ManLitsToCube(Pdr_Man_t *p, int k, int *pArray, int nArray)
     return p->vLits;
 }
 
+
 /**Function*************************************************************
 
   Synopsis    [Converts the cube in terms of RO numbers into array of CNF literals.]
@@ -330,10 +331,10 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
         clk = Abc_Clock();
         vLits = Vec_IntStart(p->nSilenced + 1);
         vLits->pArray[0] = Abc_Var2Lit(Pdr_ObjSatVar(p, k, 2, Aig_ManCo(p->pAig, p->iOutCur)), 0); // pos literal (property fails)
-        for (int i = 0; i < p->nSilenced; i++) {
+        // for (int i = 0; i < p->nSilenced; i++) {
             // Get the sat solver literal for the silenced predicate variables
             // vLits->pArray[i + 1] = Abc_Var2Lit(Pdr_ObjSatVar(p, k, 3, Saig_ManLo(p->pAig, p->vPredicatesSilence->pArray[i])), 0);
-        }
+        // }
         Limit = sat_solver_set_runtime_limit(pSat, Pdr_ManTimeLimit(p));
         RetValue = sat_solver_solve(pSat, vLits->pArray, vLits->pArray + vLits->nSize, nConfLimit, 0, 0, 0);
         sat_solver_set_runtime_limit(pSat, Limit);
@@ -349,6 +350,27 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
             Vec_IntAddToEntry(p->vActVars, k, 1);
             // add the cube in terms of current state variables
             vLits = Pdr_ManCubeToLits(p, k, pCube, 1, 0);
+
+            // add the cube of silenced predicates to the assumed literals
+            int iVar;
+            Aig_Obj_t *pObj;
+            if (p->nSilenced > 0)
+            {
+                // Pdr_SetPrint(stdout, p->vSilenceCube, Aig_ManRegNum(p->pAig), NULL);
+                // Abc_Print(1, "converting cube to lits\n");
+                for (int i = 0; i < p->vSilenceCube->nLits; i++)
+                {
+                    if (p->vSilenceCube->Lits[i] == -1)
+                    {
+                        continue;
+                    }
+                    pObj = Saig_ManLo(p->pAig, Abc_Lit2Var(p->vSilenceCube->Lits[i]));
+                    iVar = Pdr_ObjSatVar(p, k, 3, pObj);
+                    Vec_IntPush(vLits, Abc_Var2Lit(iVar, 1));
+                }
+                // Abc_Print(1, "adding silenced lits to vLits\n");
+            }
+
             // add activation literal
             Lit = Abc_Var2Lit(Pdr_ManFreeVar(p, k), 0);
             // add activation literal
@@ -363,6 +385,10 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
         }
         else
             vLits = Pdr_ManCubeToLits(p, k, pCube, 0, 1);
+        
+        
+
+
         // solve
         clk = Abc_Clock();
         Limit = sat_solver_set_runtime_limit(pSat, Pdr_ManTimeLimit(p));

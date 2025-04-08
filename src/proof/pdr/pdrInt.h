@@ -144,8 +144,8 @@ struct Pdr_Man_t_
     Vec_Int_t *vEquivMap; // flop equivalence predicate map
     Vec_Int_t *vPredicateStatus; // temp variable to record the status of predicate variables for every flop
     Vec_Int_t *vPredicateScore;  // scores for generalization of predicate replacement
-    Vec_Int_t *vPredicateRegCnt; // map from the predicate register to the # of register copies 
-    Vec_Int_t *vPredicatesSilence; // An array of all predicates for silence purpose
+    Vec_Int_t *vPredicateRegCnt; // map from the predicate register to the # of register copies
+    Pdr_Set_t *vSilenceCube; // An array of all predicates for silence purpose
     Vec_Int_t *vIsSilence; // An array to denote if a variable is silenced
     int nSilenced; // The predicates before nSilenced are all silenced
     int nPredicates;             // number of predicate registers
