@@ -351,6 +351,15 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
             // add the cube in terms of current state variables
             vLits = Pdr_ManCubeToLits(p, k, pCube, 1, 0);
 
+            // add activation literal
+            Lit = Abc_Var2Lit(Pdr_ManFreeVar(p, k), 0);
+            // add activation literal
+            Vec_IntPush(vLits, Lit);
+            RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
+            assert(RetValue == 1);
+
+            Vec_Int_t *vSilenceClause = Vec_IntStart(2);
+            vSilenceClause->pArray[0] = Lit;
             // add the cube of silenced predicates to the assumed literals
             int iVar;
             Aig_Obj_t *pObj;
@@ -366,17 +375,13 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
                     }
                     pObj = Saig_ManLo(p->pAig, Abc_Lit2Var(p->vSilenceCube->Lits[i]));
                     iVar = Pdr_ObjSatVar(p, k, 3, pObj);
-                    Vec_IntPush(vLits, Abc_Var2Lit(iVar, 1));
+                    vSilenceClause->pArray[1] = Abc_Var2Lit(iVar, 0);
+                    RetValue = sat_solver_addclause(pSat, Vec_IntArray(vSilenceClause), Vec_IntArray(vSilenceClause) + 2);
+                    assert(RetValue == 1);
                 }
                 // Abc_Print(1, "adding silenced lits to vLits\n");
             }
 
-            // add activation literal
-            Lit = Abc_Var2Lit(Pdr_ManFreeVar(p, k), 0);
-            // add activation literal
-            Vec_IntPush(vLits, Lit);
-            RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
-            assert(RetValue == 1);
             sat_solver_compress(pSat);
             // create assumptions
             vLits = Pdr_ManCubeToLits(p, k, pCube, 0, 1);
