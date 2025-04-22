@@ -141,6 +141,7 @@ void Pdr_ManSetDefaultParams(Pdr_Par_t *pPars)
     pPars->fUseSymmetry = 0;
     pPars->fPredicateReplace = 0;
     pPars->fIterativePredicate = 0;
+    pPars->fIncrPred = 0;
     pPars->pInvFileName = NULL;    // invariant file name
     pPars->pPriFileName = NULL;    // priority file name
     pPars->pRelFileName = NULL;    // Relation file name
@@ -1789,7 +1790,6 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                         // Abc_Print(1, "Length of pCubePredicate: %d\n ", pCubePredicate->nLits);
                         for (i = 0; i < pCubePredicate->nLits; i++)
                         {
-                            // Abc_Print(1, "Variable in pCubePredicate: %d\n", Abc_Lit2Var(pCubePredicate->Lits[i]));
                             // release all the silenced predicates in it
                             if (p->vIsSilence->pArray[Abc_Lit2Var(pCubePredicate->Lits[i])] == 1)
                             {
@@ -1798,6 +1798,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                                     printf("Error: Variable %d is not silenced while vIsSilence is set to 1\n", Abc_Lit2Var(pCubePredicate->Lits[i]));
                                     assert(0);
                                 }
+                                Abc_Print(1, "Releasing silenced predicate %d\n", Abc_Lit2Var(pCubePredicate->Lits[i]));
                             }
                         }
                         // NULL or &pPred according to skipDown?
