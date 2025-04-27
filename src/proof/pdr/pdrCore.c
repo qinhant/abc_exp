@@ -110,7 +110,7 @@ void Pdr_ManSetDefaultParams(Pdr_Par_t *pPars)
 {
     memset(pPars, 0, sizeof(Pdr_Par_t));
     //    pPars->iOutput        =      -1;  // zero-based output number
-    pPars->nRecycle = 300;         // limit on vars for recycling
+    pPars->nRecycle = 1000;         // limit on vars for recycling
     pPars->nFrameMax = 10000;      // limit on number of timeframes
     pPars->nTimeOut = 0;           // timeout in seconds
     pPars->nTimeOutGap = 0;        // timeout in seconds since the last solved
@@ -243,11 +243,26 @@ int Pdr_ManPushClauses(Pdr_Man_t *p)
             // check if the clause can be moved to the next frame
             RetValue2 = Pdr_ManCheckCube(p, k, pCubeK, &pCubePred, 0, 0, 1);
             if (RetValue2 == -1)
-                return -1;
-
+                return -1; 
+            
+            // if (pCubeK->hasOriginal == 1){
+            //     Abc_Print(1, "Trying to push predicate cube from frame %d to frame %d.\n", k, k + 1);
+            // }
             if (!RetValue2)
             {
-                continue;
+                // Check if this is a cube generated from predicate replacement
+                // If so, check if the original cube can be pushed to the next frame
+                if (pCubeK->hasOriginal==1){
+                    Abc_Print(1, "Testing original cube from frame %d to frame %d.\n", k, k + 1);
+                    RetValue2 = Pdr_ManCheckCube(p, k, pCubeK->OriginalCube, &pCubePred, 0, 0, 1);
+                    if (RetValue2 == -1)
+                        return -1;
+                    if (!RetValue2)
+                        continue;
+                    pCubeK = pCubeK->OriginalCube;
+                }
+                else
+                    continue;
             }
 
             {
@@ -1601,7 +1616,7 @@ int Pdr_SilenceReg(Pdr_Man_t *p, int reg)
 int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
 {
     Pdr_Obl_t *pThis;
-    Pdr_Set_t *pPred, *pCubeMin, *pCubeMinSym, *pCubePredicate, *pCubePredicateSym;
+    Pdr_Set_t *pPred, *pCubeMin, *pCubeMinSym, *pCubePredicate, *pPredicatePred, *pCubePredicateSym;
     int i, k, RetValue, Prio = ABC_INFINITY, Counter = 0;
     int kMax = Vec_PtrSize(p->vSolvers) - 1;
     abctime clk;
@@ -1684,96 +1699,6 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 if (!RetValue)
                     break;
             }
-            // add new clause
-            if (p->pPars->fVeryVerbose)
-            {
-                Abc_Print(1, "Adding cube ");
-                Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
-                Abc_Print(1, " to frame %d.\n", k);
-            }
-            // set priority flops
-            for (i = 0; i < pCubeMin->nLits; i++)
-            {
-                assert(pCubeMin->Lits[i] >= 0);
-                assert((pCubeMin->Lits[i] / 2) < Aig_ManRegNum(p->pAig));
-                if ((Vec_IntEntry(p->vPrio, pCubeMin->Lits[i] / 2) >> p->nPrioShift) == 0)
-                    p->nAbsFlops++;
-                Vec_IntAddToEntry(p->vPrio, pCubeMin->Lits[i] / 2, 1 << p->nPrioShift);
-            }
-            Vec_VecPush(p->vClauses, k, pCubeMin); // consume ref
-            p->nCubes++;
-
-            // add clause
-            for (i = 1; i <= k; i++)
-            {
-                Pdr_ManSolverAddClause(p, i, pCubeMin);
-            }
-
-            // Add symmetric cube
-            if (p->pPars->pRelFileName != NULL && p->pPars->fUseSymmetry)
-            {
-                pCubeMinSym = Pdr_ManSymmetricCube(p, pCubeMin);
-            }
-            else
-                pCubeMinSym = NULL;
-            if (pCubeMinSym)
-            {
-                // Abc_Print(1, "Checking symmetric cube ");
-                // Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
-                // Abc_Print(1, " from frame %d to %d.\n", k2, k);
-                // for (k2 = pThis->iFrame; k2 < kMax; k2++)
-                // {
-                //     RetValue = Pdr_ManCheckCube(p, k2, pCubeMinSym, NULL, 0, 0, 1);
-                //     if (RetValue == -1)
-                //     {
-                //         Pdr_OblDeref(pThis);
-                //         return -1;
-                //     }
-                //     if (!RetValue)
-                //         break;
-                // }
-                // RetValue = Pdr_ManCheckCube(p, k-1, pCubeMinSym, NULL, 0, 0, 1);
-                // if (RetValue == -1)
-                // {
-                //     Pdr_OblDeref(pThis);
-                //     return -1;
-                // }
-                // else if (RetValue == 0 && k2 < k)
-                // {
-                //     Pdr_ManPrintClauses(p, 0);
-                //     Abc_Print(1, "Failing symmetric cube ");
-                //     Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
-                //     Abc_Print(1, " in frame %d.\n", k2);
-                //     Pdr_SetDeref(pCubeMinSym);
-                //     pCubeMinSym = NULL;
-                // }
-                // else
-                // {
-                    if (p->pPars->fVeryVerbose)
-                    {
-                        Abc_Print(1, "Adding symmetric cube ");
-                        Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
-                        Abc_Print(1, " to frame %d.\n", k);
-                    }
-                    // set priority flops
-                    for (i = 0; i < pCubeMinSym->nLits; i++)
-                    {
-                        assert(pCubeMinSym->Lits[i] >= 0);
-                        assert((pCubeMinSym->Lits[i] / 2) < Aig_ManRegNum(p->pAig));
-                        if ((Vec_IntEntry(p->vPrio, pCubeMinSym->Lits[i] / 2) >> p->nPrioShift) == 0)
-                            p->nAbsFlops++;
-                        Vec_IntAddToEntry(p->vPrio, pCubeMinSym->Lits[i] / 2, 1 << p->nPrioShift);
-                    }
-                    Vec_VecPush(p->vClauses, k, pCubeMinSym); // consume ref
-                    p->nCubes++;
-
-                    // add clause
-                    for (i = 1; i <= k; i++)
-                    {
-                        Pdr_ManSolverAddClause(p, i, pCubeMinSym);
-                    }
-                // }
-            }
 
 
             // Try to compute predicate cube and test them, add them if they can be blocked
@@ -1785,44 +1710,44 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                     pCubePredicate = Pdr_ManPredicateReplace(p, k, pCubeMin);
                     if (pCubePredicate != NULL)
                     {
-                        Abc_Print(1, "Number of silenced predicates: %d\n", p->nSilenced);
-                        Abc_Print(1, "Number of predicates: %d\n", p->nPredicates);
-                        // Abc_Print(1, "Length of pCubePredicate: %d\n ", pCubePredicate->nLits);
-                        for (i = 0; i < pCubePredicate->nLits; i++)
-                        {
-                            // release all the silenced predicates in it
-                            if (p->vIsSilence->pArray[Abc_Lit2Var(pCubePredicate->Lits[i])] == 1)
+                        if (p->pPars->fIncrPred) {
+                            Abc_Print(1, "Number of silenced predicates: %d\n", p->nSilenced);
+                            Abc_Print(1, "Number of predicates: %d\n", p->nPredicates);
+                            // Abc_Print(1, "Length of pCubePredicate: %d\n ", pCubePredicate->nLits);
+                            for (i = 0; i < pCubePredicate->nLits; i++)
                             {
-                                if (Pdr_ReleaseReg(p, Abc_Lit2Var(pCubePredicate->Lits[i])) == 0)
+                                // release all the silenced predicates in it
+                                if (p->vIsSilence->pArray[Abc_Lit2Var(pCubePredicate->Lits[i])] == 1)
                                 {
-                                    printf("Error: Variable %d is not silenced while vIsSilence is set to 1\n", Abc_Lit2Var(pCubePredicate->Lits[i]));
-                                    assert(0);
+                                    if (Pdr_ReleaseReg(p, Abc_Lit2Var(pCubePredicate->Lits[i])) == 0)
+                                    {
+                                        printf("Error: Variable %d is not silenced while vIsSilence is set to 1\n", Abc_Lit2Var(pCubePredicate->Lits[i]));
+                                        assert(0);
+                                    }
+                                    Abc_Print(1, "Releasing silenced predicate %d\n", Abc_Lit2Var(pCubePredicate->Lits[i]));
                                 }
-                                Abc_Print(1, "Releasing silenced predicate %d\n", Abc_Lit2Var(pCubePredicate->Lits[i]));
                             }
-                        }
+                    }
                         // NULL or &pPred according to skipDown?
-                        RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0);
-                        if (p->pPars->fVeryVerbose)
-                        {
-                            Abc_Print(1, "Original cube ");
-                            Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
-                            Abc_Print(1, "\n");
-                            Abc_Print(1, "Predicate cube ");
-                            Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
-                            Abc_Print(1, "\n");
-                        }
-                        if (RetValue == -1)
-                        {
-                            Pdr_SetDeref(pCubeMin);
-                            Pdr_SetDeref(pCubePredicate);
-                            return -1;
-                        }
-                        else if (RetValue == 0)
-                        {
-                            Pdr_SetDeref(pCubePredicate);
-                            pCubePredicate = NULL;
-                        }
+                    Abc_Print(1, "Original cube ");
+                    Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
+                    Abc_Print(1, "\n");
+                    Abc_Print(1, "Testing Predicate cube ");
+                    Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
+                    Abc_Print(1, "\n");
+                    RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, &pPredicatePred, 0, 0, 1);
+                    if (RetValue == -1)
+                    {
+                        Pdr_SetDeref(pCubeMin);
+                        Pdr_SetDeref(pCubePredicate);
+                        return -1;
+                    }
+                    else if (RetValue == 0)
+                    {
+                        // Pdr_ManTernarySim(p, k, pCubePredicate);
+                        Pdr_SetDeref(pCubePredicate);
+                        pCubePredicate = NULL;
+                    }
                     }
                 }
                 else
@@ -1843,7 +1768,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 }
 
                 // pCubePredicate = NULL;
-                if (pCubePredicate)
+                if (pCubePredicate != NULL)
                 {
                     // set priority flops
                     for (i = 0; i < pCubePredicate->nLits; i++)
@@ -1863,13 +1788,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                     }
                     if (p->pPars->fVeryVerbose)
                     {
-                        Abc_Print(1, "Original cube ");
-                        Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
-                        Abc_Print(1, "\n");
-                        Abc_Print(1, "Predicate cube ");
-                        Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
-                        Abc_Print(1, "\n");
-                        Abc_Print(1, "Adding predicate cube ");
+                        Abc_Print(1, "Successfully adding predicate cube ");
                         Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
                         Abc_Print(1, " to frame %d.\n", k);
                     }
@@ -1905,6 +1824,74 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                             Pdr_ManSolverAddClause(p, i, pCubePredicateSym);
                         }
                     }
+                    
+                    // Set the pointer to the original cube
+                    pCubePredicate->hasOriginal = 1;
+                    pCubePredicate->OriginalCube = pCubeMin;
+                }
+            }
+            // If predicate cube cannot be added, add the original cube
+            // if (pCubePredicate == NULL || !p->pPars->fPredicateReplace)
+            if (true)
+            {
+                // add new clause
+                if (p->pPars->fVeryVerbose)
+                {
+                    Abc_Print(1, "Adding cube ");
+                    Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
+                    Abc_Print(1, " to frame %d.\n", k);
+                }
+                // set priority flops
+                for (i = 0; i < pCubeMin->nLits; i++)
+                {
+                    assert(pCubeMin->Lits[i] >= 0);
+                    assert((pCubeMin->Lits[i] / 2) < Aig_ManRegNum(p->pAig));
+                    if ((Vec_IntEntry(p->vPrio, pCubeMin->Lits[i] / 2) >> p->nPrioShift) == 0)
+                        p->nAbsFlops++;
+                    Vec_IntAddToEntry(p->vPrio, pCubeMin->Lits[i] / 2, 1 << p->nPrioShift);
+                }
+                Vec_VecPush(p->vClauses, k, pCubeMin); // consume ref
+                p->nCubes++;
+
+                // add clause
+                for (i = 1; i <= k; i++)
+                {
+                    Pdr_ManSolverAddClause(p, i, pCubeMin);
+                }
+
+                // Add symmetric cube
+                if (p->pPars->pRelFileName != NULL && p->pPars->fUseSymmetry)
+                {
+                    pCubeMinSym = Pdr_ManSymmetricCube(p, pCubeMin);
+                }
+                else
+                    pCubeMinSym = NULL;
+                if (pCubeMinSym)
+                {
+                    if (p->pPars->fVeryVerbose)
+                    {
+                        Abc_Print(1, "Adding symmetric cube ");
+                        Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, " to frame %d.\n", k);
+                    }
+                    // set priority flops
+                    for (i = 0; i < pCubeMinSym->nLits; i++)
+                    {
+                        assert(pCubeMinSym->Lits[i] >= 0);
+                        assert((pCubeMinSym->Lits[i] / 2) < Aig_ManRegNum(p->pAig));
+                        if ((Vec_IntEntry(p->vPrio, pCubeMinSym->Lits[i] / 2) >> p->nPrioShift) == 0)
+                            p->nAbsFlops++;
+                        Vec_IntAddToEntry(p->vPrio, pCubeMinSym->Lits[i] / 2, 1 << p->nPrioShift);
+                    }
+                    Vec_VecPush(p->vClauses, k, pCubeMinSym); // consume ref
+                    p->nCubes++;
+
+                    // add clause
+                    for (i = 1; i <= k; i++)
+                    {
+                        Pdr_ManSolverAddClause(p, i, pCubeMinSym);
+                    }
+                    // }
                 }
             }
             // schedule proof obligation

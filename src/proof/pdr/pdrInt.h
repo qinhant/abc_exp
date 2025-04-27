@@ -75,7 +75,9 @@ typedef struct Pdr_Set_t_ Pdr_Set_t;
 struct Pdr_Set_t_
 {
     word Sign;  // signature
-    int nRefs;  // ref counter
+    int hasOriginal; // original cube
+    void *OriginalCube;
+    int nRefs; // ref counter
     int nTotal; // total literals
     int nLits;  // num flop literals
     int Lits[0];
