@@ -1156,7 +1156,7 @@ int Pdr_ManIterPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t
                 pCubePredicate->Lits[i + 1 + j] = -1;
             }
 
-            RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0);
+            RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 0, 1);
 
             if (RetValue == -1){
                 Pdr_SetDeref(pCubePredicate);
@@ -1754,7 +1754,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 { // iterative predicate replacement
                     RetValue = Pdr_ManIterPredicateReplace(p, k, pCubeMin, &pCubePredicate);
                     if (pCubePredicate)
-                        assert(Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 1, 0) == 1);
+                        assert(Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 0, 1) == 1);
                     if (RetValue == -1)
                     {
                         Pdr_SetDeref(pCubeMin);
