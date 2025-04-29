@@ -333,22 +333,22 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
     {
         clk = Abc_Clock();
         vLits = Vec_IntStart(p->nSilenced + 1);
-        // if (p->pPars->fIncrPred && p->nSilenced > 0)
-        //     {
-        //         for (int i = 0; i < p->vSilenceCube->nLits; i++)
-        //         {
-        //             if (p->vSilenceCube->Lits[i] == -1)
-        //             {
-        //                 continue;
-        //             }
-        //             pObj = Saig_ManLo(p->pAig, Abc_Lit2Var(p->vSilenceCube->Lits[i]));
-        //             iVar = Pdr_ObjSatVar(p, k, 3, pObj);
-        //             vSilenceClause->pArray[1] = Abc_Var2Lit(iVar, 0);
-        //             RetValue = sat_solver_addclause(pSat, Vec_IntArray(vSilenceClause), Vec_IntArray(vSilenceClause) + 2);
-        //             assert(RetValue == 1);
-        //         }
-        //         // Abc_Print(1, "adding silenced lits to vLits\n");
-        //     }
+        if (p->pPars->fIncrPred && p->nSilenced > 0)
+            {
+                for (int i = 0; i < p->vSilenceCube->nLits; i++)
+                {
+                    if (p->vSilenceCube->Lits[i] == -1)
+                    {
+                        continue;
+                    }
+                    pObj = Saig_ManLo(p->pAig, Abc_Lit2Var(p->vSilenceCube->Lits[i]));
+                    iVar = Pdr_ObjSatVar(p, k, 3, pObj);
+                    vSilenceClause->pArray[1] = Abc_Var2Lit(iVar, 0);
+                    RetValue = sat_solver_addclause(pSat, Vec_IntArray(vSilenceClause), Vec_IntArray(vSilenceClause) + 2);
+                    assert(RetValue == 1);
+                }
+                // Abc_Print(1, "adding silenced lits to vLits\n");
+            }
         vLits->pArray[0] = Abc_Var2Lit(Pdr_ObjSatVar(p, k, 2, Aig_ManCo(p->pAig, p->iOutCur)), 0); // pos literal (property fails)
         Limit = sat_solver_set_runtime_limit(pSat, Pdr_ManTimeLimit(p));
         RetValue = sat_solver_solve(pSat, vLits->pArray, vLits->pArray + vLits->nSize, nConfLimit, 0, 0, 0);

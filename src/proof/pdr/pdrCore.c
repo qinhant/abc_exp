@@ -1497,14 +1497,15 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
     return 1;
 }
 
-int Pdr_RemoveSilence(Pdr_Man_t *p, Pdr_Set_t *pCube)
+int Pdr_RemoveSilence(Pdr_Man_t *p, Pdr_Set_t *pCube, int k)
 {
     int i = 0;
     int same = 1;
 
-    // Abc_Print(1, "Original cube ");
-    // Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
-    // Abc_Print(1, "\n");
+    Abc_Print(1, "Original cube ");
+    Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
+    Abc_Print(1, " in frame %d\n", k);
+    Abc_Print(1, "Original nLits: %d\n", pCube->nLits);
     while( i < pCube->nLits)
     {
         // Abc_Print(1, "i: %d\n", i);
@@ -1520,11 +1521,12 @@ int Pdr_RemoveSilence(Pdr_Man_t *p, Pdr_Set_t *pCube)
 
         i++;
     }
-    // if (!same) {
-    // Abc_Print(1, "Resultant cube ");
-    // Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
-    // Abc_Print(1, "\n");
-    // }
+    if (!same) {
+    Abc_Print(1, "Resultant cube ");
+    Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
+    Abc_Print(1, "\n");
+    Abc_Print(1, "Resultant nLits: %d\n", pCube->nLits);
+    }
 
     return same;
 }
@@ -1630,8 +1632,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
     {
         Counter++;
         pThis = Pdr_QueueHead(p);
-        Pdr_RemoveSilence(p, pThis->pState);
-        // Pdr_SetPrint(stdout, pThis->pState, Aig_ManRegNum(p->pAig), NULL);
+        Pdr_RemoveSilence(p, pThis->pState, pThis->iFrame);
         if (pThis->iFrame == 0 || (p->pPars->fUseAbs && Pdr_SetIsInit(pThis->pState, -1))) return 0; // SAT
         if (pThis->iFrame > kMax) // finished this level
             return 1;
@@ -1642,7 +1643,12 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
             return 1; // restart
         }
         pThis = Pdr_QueuePop(p);
+
         assert(pThis->iFrame > 0);
+        if (Pdr_SetIsInit(pThis->pState, -1)) {
+            printf("Error: Pdr_ManBlockCube: trying to block init sate\n");
+            // while (1);
+        }
         assert(!Pdr_SetIsInit(pThis->pState, -1));
         p->iUseFrame = Abc_MinInt(p->iUseFrame, pThis->iFrame);
         clk = Abc_Clock();
@@ -1831,8 +1837,8 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 }
             }
             // If predicate cube cannot be added, add the original cube
-            // if (pCubePredicate == NULL || !p->pPars->fPredicateReplace)
-            if (true)
+            if (pCubePredicate == NULL || !p->pPars->fPredicateReplace)
+            // if (true)
             {
                 // add new clause
                 if (p->pPars->fVeryVerbose)
