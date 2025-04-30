@@ -252,16 +252,16 @@ int Pdr_ManPushClauses(Pdr_Man_t *p)
             {
                 // Check if this is a cube generated from predicate replacement
                 // If so, check if the original cube can be pushed to the next frame
-                if (pCubeK->hasOriginal==1){
-                    Abc_Print(1, "Testing original cube from frame %d to frame %d.\n", k, k + 1);
-                    RetValue2 = Pdr_ManCheckCube(p, k, pCubeK->OriginalCube, &pCubePred, 0, 0, 1);
-                    if (RetValue2 == -1)
-                        return -1;
-                    if (!RetValue2)
-                        continue;
-                    pCubeK = pCubeK->OriginalCube;
-                }
-                else
+                // if (pCubeK->hasOriginal==1){
+                //     Abc_Print(1, "Testing original cube from frame %d to frame %d.\n", k, k + 1);
+                //     RetValue2 = Pdr_ManCheckCube(p, k, pCubeK->OriginalCube, &pCubePred, 0, 0, 1);
+                //     if (RetValue2 == -1)
+                //         return -1;
+                //     if (!RetValue2)
+                //         continue;
+                //     pCubeK = pCubeK->OriginalCube;
+                // }
+                // else
                     continue;
             }
 
@@ -1502,10 +1502,10 @@ int Pdr_RemoveSilence(Pdr_Man_t *p, Pdr_Set_t *pCube, int k)
     int i = 0;
     int same = 1;
 
-    Abc_Print(1, "Original cube ");
-    Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
-    Abc_Print(1, " in frame %d\n", k);
-    Abc_Print(1, "Original nLits: %d\n", pCube->nLits);
+    // Abc_Print(1, "Original cube ");
+    // Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
+    // Abc_Print(1, " in frame %d\n", k);
+    // Abc_Print(1, "Original nLits: %d\n", pCube->nLits);
     while( i < pCube->nLits)
     {
         // Abc_Print(1, "i: %d\n", i);
@@ -1521,12 +1521,12 @@ int Pdr_RemoveSilence(Pdr_Man_t *p, Pdr_Set_t *pCube, int k)
 
         i++;
     }
-    if (!same) {
-    Abc_Print(1, "Resultant cube ");
-    Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
-    Abc_Print(1, "\n");
-    Abc_Print(1, "Resultant nLits: %d\n", pCube->nLits);
-    }
+    // if (!same) {
+    // Abc_Print(1, "Resultant cube ");
+    // Pdr_SetPrint(stdout, pCube, Aig_ManRegNum(p->pAig), NULL);
+    // Abc_Print(1, "\n");
+    // Abc_Print(1, "Resultant nLits: %d\n", pCube->nLits);
+    // }
 
     return same;
 }
@@ -1832,13 +1832,13 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                     }
                     
                     // Set the pointer to the original cube
-                    pCubePredicate->hasOriginal = 1;
-                    pCubePredicate->OriginalCube = pCubeMin;
+                    // pCubePredicate->hasOriginal = 1;
+                    // pCubePredicate->OriginalCube = pCubeMin;
                 }
             }
             // If predicate cube cannot be added, add the original cube
-            if (pCubePredicate == NULL || !p->pPars->fPredicateReplace)
-            // if (true)
+            // if (pCubePredicate == NULL || !p->pPars->fPredicateReplace)
+            if (true)
             {
                 // add new clause
                 if (p->pPars->fVeryVerbose)
