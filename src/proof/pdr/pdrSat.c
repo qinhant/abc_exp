@@ -59,8 +59,54 @@ sat_solver *Pdr_ManCreateSolver(Pdr_Man_t *p, int k)
     // add property cone
     Saig_ManForEachPo(p->pAig, pObj, i)
         Pdr_ObjSatVar(p, k, 1, pObj);
+
+    if (p->pPars->pRelFileName != NULL)
+    {
+        Pdr_ManAddPredicateSemantic(p, k);
+    }
+
     return pSat;
 }
+
+/**Function*************************************************************
+
+  Synopsis    [Add the semantic assumption for predicate variables to the sat solver]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Pdr_ManAddPredicateSemantic(Pdr_Man_t *p, int k)
+{
+    Pdr_Set_t *tempCube;
+    tempCube = (Pdr_Set_t *)ABC_ALLOC(char, sizeof(Pdr_Set_t) + 3 * sizeof(int));
+    tempCube->nLits = 3;
+    tempCube->nTotal = 3;
+    tempCube->nRefs = 1;
+    tempCube->Sign = 0;
+
+    int reg, symReg, predicateReg;
+
+    for (reg = 0; reg < p->pAig->nRegs; reg++)
+    {
+        symReg = p->vSymMap->pArray[reg];
+        predicateReg = Vec_IntEntry(p->vEquivMap, reg);
+        if (predicateReg == -1)
+        {
+            continue;
+        }
+        
+        tempCube->Lits[0] = Abc_Var2Lit(reg, 1);
+        tempCube->Lits[1] = Abc_Var2Lit(symReg, 0);
+        tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 1);
+
+        Pdr_ManSolverAddClause(p, k, tempCube);
+    }
+}
+
 
 /**Function*************************************************************
 
@@ -115,6 +161,13 @@ sat_solver *Pdr_ManFetchSolver(Pdr_Man_t *p, int k)
             }
             Pdr_ManSolverAddClause(p, k, pCube);
         }
+    
+    
+
+    if (p->pPars->pRelFileName != NULL) {
+        Pdr_ManAddPredicateSemantic(p, k);
+    }
+
     return pSat;
 }
 
