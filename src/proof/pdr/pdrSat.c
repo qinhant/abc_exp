@@ -99,9 +99,24 @@ void Pdr_ManAddPredicateSemantic(Pdr_Man_t *p, int k)
             continue;
         }
         
+        // Add the (!predicate -> equal) constraint
         tempCube->Lits[0] = Abc_Var2Lit(reg, 1);
         tempCube->Lits[1] = Abc_Var2Lit(symReg, 0);
         tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 1);
+
+        Pdr_ManSolverAddClause(p, k, tempCube);
+
+        // Add the (equal -> !predciate) constraint
+        if (reg > symReg) {
+            tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
+            tempCube->Lits[1] = Abc_Var2Lit(symReg, 0);
+            tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 0);
+        }
+        else {
+            tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
+            tempCube->Lits[1] = Abc_Var2Lit(symReg, 1);
+            tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 1);
+        }
 
         Pdr_ManSolverAddClause(p, k, tempCube);
     }
