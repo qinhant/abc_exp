@@ -1153,14 +1153,17 @@ int Pdr_ManIterPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t
                     pCubePredicate->Lits[i + 1 + j] = regLits[j];
                 }
                 nSkips += 1;
-                printf("Fail to set predicate %i\n", PredicateReg);
+
+                if (p->pPars->fVeryVerbose)
+                    printf("Fail to set predicate %i\n", PredicateReg);
             }
             else
             {
                 // success - proceed to the next predicate register
                 isDiff = 1;
                 nSkips += nRegs;
-                printf("Succeed to set predicate %i nReg=%i\n", PredicateReg, nRegs);
+                if (p->pPars->fVeryVerbose)
+                    printf("Succeed to set predicate %i nReg=%i\n", PredicateReg, nRegs);
             }
 
             i += 1 + (1 + nRegs);
@@ -1633,7 +1636,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 }
                 else if (RetValue == 0 && k2 < k)
                 {
-                    Pdr_ManPrintClauses(p, 0);
+                    // Pdr_ManPrintClauses(p, 0);
                     Abc_Print(1, "Failing symmetric cube ");
                     Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
                     Abc_Print(1, " in frame %d.\n", k2);
