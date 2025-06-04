@@ -255,6 +255,7 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
     int flop;
     int symmetry;
     int predicate;
+    int eqinitPredicate;
     char line[256];
     if (fgets(line, sizeof(line), pFile) == NULL)
     {
@@ -266,11 +267,12 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
     p->vEquivMap = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vPredicateScore = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vPredicateRegCnt = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vEqinitMap = Vec_IntStart(Aig_ManRegNum(pAig));
 
     while (fgets(line, sizeof(line), pFile))
     {
-        sscanf(line, "%d %d %d", &flop, &symmetry, &predicate);
-        // printf("flop: %d, symmetry: %d, predicate: %d\n", flop, symmetry, predicate);
+        sscanf(line, "%d %d %d %d", &flop, &symmetry, &predicate, &eqinitPredicate);
+        // printf("flop: %d, symmetry: %d, predicate: %d, eqinit %d\n", flop, symmetry, predicate, eqinitPredicate);
         p->vSymMap->pArray[flop] = symmetry;
         p->vEquivMap->pArray[flop] = predicate;
         if (predicate != -1){
@@ -278,6 +280,7 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
             // static scoring based on reg count for now
             Vec_IntAddToEntry(p->vPredicateScore, predicate, 1);
         }
+        p->vEqinitMap->pArray[flop] = eqinitPredicate;
     }
     int i, entry;
     // Abc_Print(1, "Number of flops %d\n", Aig_ManRegNum(pAig));

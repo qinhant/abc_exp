@@ -285,31 +285,31 @@ int Pdr_ManPushClauses(Pdr_Man_t *p)
             Vec_PtrPop(vArrayK);
             j--;
 
-            // if (p->pPars->pRelFileName != NULL && p->pPars->fUseSymmetry)
-            // {
-            //     pCubeKSym = Pdr_ManSymmetricCube(p, pCubeK);
-            //     if (pCubeKSym != NULL)
-            //     {
-            //         RetValue3 = Pdr_ManCheckCube(p, k, pCubeKSym, &pCubePred, 0, 0, 1);
-            //         if (RetValue3 == 0)
-            //         {
-            //             if (p->pPars->fVeryVerbose)
-            //             {
+            if (p->pPars->pRelFileName != NULL && p->pPars->fUseSymmetry)
+            {
+                pCubeKSym = Pdr_ManSymmetricCube(p, pCubeK);
+                if (pCubeKSym != NULL)
+                {
+                    RetValue3 = Pdr_ManCheckCube(p, k, pCubeKSym, &pCubePred, 0, 0, 1);
+                    if (RetValue3 == 0)
+                    {
+                        if (p->pPars->fVeryVerbose)
+                        {
 
-            //                 Abc_Print(1, "symmetric cube ");
-            //                 Pdr_SetPrint(stdout, pCubeKSym, Aig_ManRegNum(p->pAig), NULL);
-            //                 Abc_Print(1, " cannot be pushed from frame %d to frame %d.\n", k, k + 1);
-            //                 Abc_Print(1, "cex cube ");
-            //                 Pdr_SetPrint(stdout, pCubePred, Aig_ManRegNum(p->pAig), NULL);
-            //                 Abc_Print(1, " at frame %d\n", k);
-            //             }
-            //             // if (k == 6 || k == 4)
-            //             //     Pdr_ManPrintClauses(p, 0);
-            //         }
-            //         Pdr_SetDeref(pCubeKSym);
+                            Abc_Print(1, "symmetric cube ");
+                            Pdr_SetPrint(stdout, pCubeKSym, Aig_ManRegNum(p->pAig), NULL);
+                            Abc_Print(1, " cannot be pushed from frame %d to frame %d.\n", k, k + 1);
+                            Abc_Print(1, "cex cube ");
+                            Pdr_SetPrint(stdout, pCubePred, Aig_ManRegNum(p->pAig), NULL);
+                            Abc_Print(1, " at frame %d\n", k);
+                        }
+                        // if (k == 6 || k == 4)
+                        //     Pdr_ManPrintClauses(p, 0);
+                    }
+                    Pdr_SetDeref(pCubeKSym);
 
-            //     }
-            // }
+                }
+            }
         }
         if (Vec_PtrSize(vArrayK) == 0)
             RetValue = 1;
@@ -880,7 +880,7 @@ int Pdr_ManGeneralize2(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppCube
   SeeAlso     []
 
 ***********************************************************************/
-Pdr_Set_t *Pdr_ManPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
+Pdr_Set_t *Pdr_ManEquivPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
 {
     Pdr_Set_t *pCubePredicate;
     int i, RegId, SymReg, PredicateReg;
@@ -932,8 +932,8 @@ Pdr_Set_t *Pdr_ManPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
                 p->vPredicateStatus->pArray[PredicateReg] = -3; // -3 means this predicate variable should be added to the final cube
             }
             // If the cube containts both literal and its symmetry and they have the same value, then the predicate should not be added
-            else if (((Vec_IntEntry(p->vPredicateStatus, RegId) == 1 && Vec_IntEntry(p->vPredicateStatus, SymReg) == 1) || (Vec_IntEntry(p->vPredicateStatus, RegId) == 2 && Vec_IntEntry(p->vPredicateStatus, SymReg) == 2)))
-                p->vPredicateStatus->pArray[PredicateReg] = -4; // -4 means this predicate variable should not be added
+            // else if (((Vec_IntEntry(p->vPredicateStatus, RegId) == 1 && Vec_IntEntry(p->vPredicateStatus, SymReg) == 1) || (Vec_IntEntry(p->vPredicateStatus, RegId) == 2 && Vec_IntEntry(p->vPredicateStatus, SymReg) == 2)))
+            //     p->vPredicateStatus->pArray[PredicateReg] = -4; // -4 means this predicate variable should not be added
         }
     }
 
@@ -1405,7 +1405,7 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
     {
         if (!p->pPars->fIterativePredicate)
         {
-            pCubePredicate = Pdr_ManPredicateReplace(p, k, pCubeMin);
+            pCubePredicate = Pdr_ManEquivPredicateReplace(p, k, pCubeMin);
             if (pCubePredicate != NULL)
             {
                 // NULL or &pPred according to skipDown?
@@ -1415,11 +1415,9 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
                     Abc_Print(1, "Original cube ");
                     Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
                     Abc_Print(1, "\n");
-                    Abc_Print(1, "Predicate cube ");
+                    Abc_Print(1, "Equiv-Predicate cube ");
                     Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
                     Abc_Print(1, "\n");
-                    // if (RetValue && p->pPars->fVeryVerbose)
-                    //     Abc_Print(1, "Successful Replacement\n");
                 }
                 if (RetValue == -1)
                 {
@@ -1634,12 +1632,12 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                     Pdr_OblDeref(pThis);
                     return -1;
                 }
-                else if (RetValue == 0 && k2 < k)
+                else if (RetValue == 0)
                 {
                     // Pdr_ManPrintClauses(p, 0);
                     Abc_Print(1, "Failing symmetric cube ");
                     Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
-                    Abc_Print(1, " in frame %d.\n", k2);
+                    Abc_Print(1, " in frame %d.\n", k);
                     Pdr_SetDeref(pCubeMinSym);
                     pCubeMinSym = NULL;
                 }
@@ -1649,7 +1647,7 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                     {
                         Abc_Print(1, "Adding symmetric cube ");
                         Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
-                        Abc_Print(1, " to frame %d.\n", k2);
+                        Abc_Print(1, " to frame %d.\n", k);
                     }
                     // set priority flops
                     for (i = 0; i < pCubeMinSym->nLits; i++)
@@ -1763,6 +1761,8 @@ int Pdr_ManSolveInt(Pdr_Man_t *p)
         p->iUseFrame = Abc_MaxInt(iFrame, 1);
         Saig_ManForEachPo(p->pAig, pObj, p->iOutCur)
         {
+            if (p->iOutCur == 1) // Skip the 2nd PO, which is a dummy output.
+                continue;
             // skip disproved outputs
             if (p->vCexes && Vec_PtrEntry(p->vCexes, p->iOutCur))
                 continue;

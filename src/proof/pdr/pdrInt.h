@@ -144,6 +144,7 @@ struct Pdr_Man_t_
     Vec_Ptr_t *vInfCubes; // infinity clauses/cubes
     Vec_Int_t *vSymMap;   // flop symmetry map
     Vec_Int_t *vEquivMap; // flop equivalence predicate map
+    Vec_Int_t *vEqinitMap; // flop eqinit predicate map
     Vec_Int_t *vPredicateStatus; // temp variable to record the status of predicate variables for every flop
     Vec_Int_t *vPredicateScore;  // scores for generalization of predicate replacement
     Vec_Int_t *vPredicateRegCnt; // map from the predicate register to the # of register copies
