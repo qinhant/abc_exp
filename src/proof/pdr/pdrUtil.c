@@ -845,6 +845,11 @@ int Pdr_ManIsPredicate(Pdr_Man_t *p, int regId){
     return Vec_IntEntry(p->vPredicateScore, regId) > 0;
 }
 
+int Pdr_ManIsEqInitPredicate(Pdr_Man_t* p, int regId){
+    assert(regId >= 0 && regId < Vec_IntSize(p->vEqInitScore));
+    return Vec_IntEntry(p->vEqInitScore, regId) > 0;
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 ///                       END OF FILE                                ///

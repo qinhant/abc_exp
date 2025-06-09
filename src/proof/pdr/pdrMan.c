@@ -266,7 +266,9 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
     p->vSymMap = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vEquivMap = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vPredicateScore = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vEqInitScore = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vPredicateRegCnt = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vEqInitRegCnt = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vEqinitMap = Vec_IntStart(Aig_ManRegNum(pAig));
 
     p->nEqinitPredicates = 0;
@@ -284,6 +286,9 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
         p->vEqinitMap->pArray[flop] = eqinitPredicate;
         if (eqinitPredicate != -1){
             p->nEqinitPredicates++;
+            Vec_IntAddToEntry(p->vEqInitRegCnt, eqinitPredicate, 1);
+            // static scoring based on reg count for now
+            Vec_IntAddToEntry(p->vEqInitScore, eqinitPredicate, 1);
         }
     }
     int i, entry;
@@ -293,6 +298,8 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
             p->nPredicates++;
         }
     }
+
+    
     
     if (p->pPars->fIncrPred){
         p->vSilenceCube = (Pdr_Set_t *)ABC_ALLOC(char, sizeof(Pdr_Set_t) + (p->nPredicates) * sizeof(int));
