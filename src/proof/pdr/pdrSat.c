@@ -126,35 +126,38 @@ void Pdr_ManAddPredicateSemantic(Pdr_Man_t *p, int k)
     // }
 
     // Add the constraint for equality predicates
-    for (reg = 0; reg < p->pAig->nRegs; reg++)
+    if (p->nPredicates > 0)
     {
-        symReg = p->vSymMap->pArray[reg];
-        predicateReg = Vec_IntEntry(p->vEquivMap, reg);
-        if (predicateReg == -1)
+        for (reg = 0; reg < p->pAig->nRegs; reg++)
         {
-            continue;
-        }
-        
-        // Add the (!neq_predicate -> equal) constraint
-        tempCube->Lits[0] = Abc_Var2Lit(reg, 1);
-        tempCube->Lits[1] = Abc_Var2Lit(symReg, 0);
-        tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 1);
-
-        Pdr_ManSolverAddClause(p, k, tempCube);
-
-        // Add the (neq_predicate -> !equal) constraint -- wrong way!!!
-        if (symReg > reg) {
-            tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
-            tempCube->Lits[1] = Abc_Var2Lit(symReg, 0);
-            tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 0);
-
-            Pdr_ManSolverAddClause(p, k, tempCube);
-
+            symReg = p->vSymMap->pArray[reg];
+            predicateReg = Vec_IntEntry(p->vEquivMap, reg);
+            if (predicateReg == -1)
+            {
+                continue;
+            }
+            
+            // Add the (!neq_predicate -> equal) constraint
             tempCube->Lits[0] = Abc_Var2Lit(reg, 1);
-            tempCube->Lits[1] = Abc_Var2Lit(symReg, 1);
-            tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 0);
+            tempCube->Lits[1] = Abc_Var2Lit(symReg, 0);
+            tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 1);
 
             Pdr_ManSolverAddClause(p, k, tempCube);
+
+            // Add the (neq_predicate -> !equal) constraint -- wrong way!!!
+            if (symReg > reg) {
+                // tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
+                // tempCube->Lits[1] = Abc_Var2Lit(symReg, 0);
+                // tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 0);
+
+                // Pdr_ManSolverAddClause(p, k, tempCube);
+
+                // tempCube->Lits[0] = Abc_Var2Lit(reg, 1);
+                // tempCube->Lits[1] = Abc_Var2Lit(symReg, 1);
+                // tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 0);
+
+                // Pdr_ManSolverAddClause(p, k, tempCube);
+            }
         }
     }
 
@@ -163,15 +166,22 @@ void Pdr_ManAddPredicateSemantic(Pdr_Man_t *p, int k)
     tempCube->nLits = 2;
     tempCube->nTotal = 2;
 
-    for (reg = 0; reg < p->pAig->nRegs; reg++)
+    if (p->nEqinitPredicates > 0)
     {
-        predicateReg = Vec_IntEntry(p->vEqinitMap, reg);
-        if (predicateReg == -1)
+        for (reg = 0; reg < p->pAig->nRegs; reg++)
         {
-            continue;
-        }
-        
+            predicateReg = Vec_IntEntry(p->vEqinitMap, reg);
+            if (predicateReg == -1)
+            {
+                continue;
+            }
 
+            // Add the (!neqinit -> equal_init) constraint
+            tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
+            tempCube->Lits[1] = Abc_Var2Lit(predicateReg, 1);
+            
+            Pdr_ManSolverAddClause(p, k, tempCube);
+        }
     }
 
     Pdr_SetDeref(tempCube);

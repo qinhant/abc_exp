@@ -269,6 +269,7 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
     p->vPredicateRegCnt = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vEqinitMap = Vec_IntStart(Aig_ManRegNum(pAig));
 
+    p->nEqinitPredicates = 0;
     while (fgets(line, sizeof(line), pFile))
     {
         sscanf(line, "%d %d %d %d", &flop, &symmetry, &predicate, &eqinitPredicate);
@@ -281,13 +282,15 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
             Vec_IntAddToEntry(p->vPredicateScore, predicate, 1);
         }
         p->vEqinitMap->pArray[flop] = eqinitPredicate;
+        if (eqinitPredicate != -1){
+            p->nEqinitPredicates++;
+        }
     }
     int i, entry;
     // Abc_Print(1, "Number of flops %d\n", Aig_ManRegNum(pAig));
     Vec_IntForEachEntry(p->vPredicateRegCnt, entry, i){
         if (entry > 0) {
             p->nPredicates++;
-            // Abc_Print(1, "Predicate %d\n", i);
         }
     }
     
@@ -402,6 +405,7 @@ Pdr_Man_t *Pdr_ManStart(Aig_Man_t *pAig, Pdr_Par_t *pPars, Vec_Int_t *vPrioInit)
     if (pPars->pRelFileName == NULL){
         // p->vPredicatesSilence = Vec_IntStart(0);
         p->nPredicates = 0;
+        p->nEqinitPredicates = 0;
     }
 
 

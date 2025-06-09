@@ -151,8 +151,9 @@ struct Pdr_Man_t_
     Pdr_Set_t *vSilenceCube; // An array of all predicates for silence purpose
     Vec_Int_t *vIsSilence; // An array to denote if a variable is silenced
     int nSilenced; // The predicates before nSilenced are all silenced
-    int nPredicates;             // number of predicate registers
-    
+    int nPredicates;             // number of equiv-predicate registers
+    int nEqinitPredicates;    // number of eqinit-predicate registers
+
     // statistics
     int nBlocks; // the number of times blockState was called
     int nObligs; // the number of proof obligations derived

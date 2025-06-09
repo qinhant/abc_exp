@@ -871,7 +871,93 @@ int Pdr_ManGeneralize2(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppCube
 
 /**Function*************************************************************
 
-  Synopsis    [Compute the replace-by-predicate cube]
+  Synopsis    [Compute the replace-by-eqinit-predicate cube]
+
+  Description []
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+Pdr_Set_t *Pdr_ManEqInitPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
+{
+    Pdr_Set_t *pCubePredicate;
+    int i, RegId, SymReg, PredicateReg;
+
+    pCubePredicate = (Pdr_Set_t *)ABC_ALLOC(char, sizeof(Pdr_Set_t) + (pCube->nTotal) * sizeof(int));
+    pCubePredicate->nLits = 0;
+    pCubePredicate->nTotal = 0;
+    pCubePredicate->nRefs = 1;
+    pCubePredicate->Sign = 0;
+
+    for (i = 0; i < p->vPredicateStatus->nSize; i++)
+        p->vPredicateStatus->pArray[i] = 0;
+
+    // First pass, mark the status of each literal in the cube
+    for (i = 0; i < pCube->nLits; i++)
+    {
+        RegId = Abc_Lit2Var(pCube->Lits[i]);
+        if (Vec_IntEntry(p->vEqinitMap, RegId) < 0)
+        {
+            p->vPredicateStatus->pArray[RegId] = -1; // -1 means this variable does not have equivalence predicates and should be kept in the cube
+        }
+        else
+        {
+            if (!Abc_LitIsCompl(pCube->Lits[i]))
+            {
+                p->vPredicateStatus->pArray[RegId] = 1; // 1 means the literal value is 1, and we can try to replace it with the eqinit predicate
+            }
+            else
+            {
+                p->vPredicateStatus->pArray[RegId] = -1; // -1 means the literal value is 0, we should keep it in the cube.
+            }
+        }
+    }
+
+    // Second pass, formulate the new cube
+    int isDiff = 0;
+    for (i = 0; i < pCube->nLits; i++)
+    {
+        RegId = Abc_Lit2Var(pCube->Lits[i]);
+        if(p->vPredicateStatus->pArray[RegId] == -1)
+        {
+            pCubePredicate->Lits[pCubePredicate->nLits] = pCube->Lits[i];
+            pCubePredicate->Sign |= ((word)1) << (pCube->Lits[i] % 63);
+            pCubePredicate->nLits++;
+            p->vPredicateStatus->pArray[RegId] = 2; // If a literal is already added to cube, mark its status as 2
+        }
+        else if (p->vPredicateStatus->pArray[RegId] == 1)
+        {
+            isDiff = 1;
+            PredicateReg = Vec_IntEntry(p->vEqinitMap, RegId);
+            if (p->vPredicateStatus->pArray[PredicateReg] == 0) 
+            {
+                pCubePredicate->Lits[pCubePredicate->nLits] = Abc_Var2Lit(PredicateReg, 0);
+                pCubePredicate->Sign |= ((word)1) << (Abc_Var2Lit(PredicateReg, 0) % 63);
+                pCubePredicate->nLits++;
+                p->vPredicateStatus->pArray[PredicateReg] = 2;
+            }
+        }
+    }
+
+    pCubePredicate->nTotal = pCubePredicate->nLits + pCube->nTotal - pCube->nLits;
+
+    if (isDiff)
+    {
+        Vec_IntSelectSort(pCubePredicate->Lits, pCubePredicate->nLits);
+        return pCubePredicate;
+    }
+    else
+    {
+        Pdr_SetDeref(pCubePredicate);
+        return NULL;
+    }
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Compute the replace-by-equiv-predicate cube]
 
   Description []
 
@@ -1066,8 +1152,8 @@ int Pdr_ManIterPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t
                 }
             }
             // If the cube containts both literal and its symmetry and they have the same value, then the predicate should not be added
-            else if (((Vec_IntEntry(p->vPredicateStatus, RegId) == 1 && Vec_IntEntry(p->vPredicateStatus, SymReg) == 1) || (Vec_IntEntry(p->vPredicateStatus, RegId) == 2 && Vec_IntEntry(p->vPredicateStatus, SymReg) == 2)))
-                p->vPredicateStatus->pArray[PredicateReg] = -4; // -4 means this predicate variable should not be added
+            // else if (((Vec_IntEntry(p->vPredicateStatus, RegId) == 1 && Vec_IntEntry(p->vPredicateStatus, SymReg) == 1) || (Vec_IntEntry(p->vPredicateStatus, RegId) == 2 && Vec_IntEntry(p->vPredicateStatus, SymReg) == 2)))
+            //     p->vPredicateStatus->pArray[PredicateReg] = -4; // -4 means this predicate variable should not be added
         }
     }
 
@@ -1405,36 +1491,73 @@ int Pdr_ManGeneralize(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred,
     {
         if (!p->pPars->fIterativePredicate)
         {
-            pCubePredicate = Pdr_ManEquivPredicateReplace(p, k, pCubeMin);
-            if (pCubePredicate != NULL)
+            if (p->nPredicates > 0)
             {
-                // NULL or &pPred according to skipDown?
-                RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 0, 1);
-                if (p->pPars->fVeryVerbose)
+                pCubePredicate = Pdr_ManEquivPredicateReplace(p, k, pCubeMin);
+                if (pCubePredicate != NULL)
                 {
-                    Abc_Print(1, "Original cube ");
-                    Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
-                    Abc_Print(1, "\n");
-                    Abc_Print(1, "Equiv-Predicate cube ");
-                    Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
-                    Abc_Print(1, "\n");
-                }
-                if (RetValue == -1)
-                {
-                    Pdr_SetDeref(pCubeMin);
-                    Pdr_SetDeref(pCubePredicate);
-                    return -1;
-                }
-                else if (RetValue == 1)
-                {
-                    Pdr_SetDeref(pCubeMin);
-                    pCubeMin = pCubePredicate;
+                    // NULL or &pPred according to skipDown?
+                    RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 0, 1);
                     if (p->pPars->fVeryVerbose)
-                        Abc_Print(1, "Successful Replacement\n");
-                    p->nPCubes++;
+                    {
+                        Abc_Print(1, "Original cube ");
+                        Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, "\n");
+                        Abc_Print(1, "Equiv-Predicate cube ");
+                        Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, "\n");
+                    }
+                    if (RetValue == -1)
+                    {
+                        Pdr_SetDeref(pCubeMin);
+                        Pdr_SetDeref(pCubePredicate);
+                        return -1;
+                    }
+                    else if (RetValue == 1)
+                    {
+                        Pdr_SetDeref(pCubeMin);
+                        pCubeMin = pCubePredicate;
+                        if (p->pPars->fVeryVerbose)
+                            Abc_Print(1, "Successful Replacement of Equiv-Predicate\n");
+                        p->nPCubes++;
+                    }
+                    else if (RetValue == 0)
+                        Pdr_SetDeref(pCubePredicate);
                 }
-                else if (RetValue == 0)
-                    Pdr_SetDeref(pCubePredicate);
+            }
+            if (p->nEqinitPredicates > 0)
+            {
+                pCubePredicate = Pdr_ManEqInitPredicateReplace(p, k, pCubeMin);
+                if (pCubePredicate != NULL)
+                {
+                    // NULL or &pPred according to skipDown?
+                    RetValue = Pdr_ManCheckCube(p, k, pCubePredicate, NULL, p->pPars->nConfLimit, 0, 1);
+                    if (p->pPars->fVeryVerbose)
+                    {
+                        Abc_Print(1, "Original cube ");
+                        Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, "\n");
+                        Abc_Print(1, "EqInit-Predicate cube ");
+                        Pdr_SetPrint(stdout, pCubePredicate, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, "\n");
+                    }
+                    if (RetValue == -1)
+                    {
+                        Pdr_SetDeref(pCubeMin);
+                        Pdr_SetDeref(pCubePredicate);
+                        return -1;
+                    }
+                    else if (RetValue == 1)
+                    {
+                        Pdr_SetDeref(pCubeMin);
+                        pCubeMin = pCubePredicate;
+                        if (p->pPars->fVeryVerbose)
+                            Abc_Print(1, "Successful Replacement of EqInit-Predicate\n");
+                        // p->nPCubes++;
+                    }
+                    else if (RetValue == 0)
+                        Pdr_SetDeref(pCubePredicate);
+                }
             }
         }
         else
