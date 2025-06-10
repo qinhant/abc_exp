@@ -1047,7 +1047,7 @@ Pdr_Set_t *Pdr_ManEqInitPredicateReplace(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
         }
     }
 
-    pCubePredicate->nTotal = pCubePredicate->nLits + pCube->nTotal - pCube->nLits;
+    pCubePredicate->nTotal = pCubePredicate->nLits;
 
     if (isDiff)
     {
