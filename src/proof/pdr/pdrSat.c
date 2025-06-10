@@ -163,26 +163,26 @@ void Pdr_ManAddPredicateSemantic(Pdr_Man_t *p, int k)
 
     // Add the constraint for neqinit predicates
     // All init values are 0
-    // tempCube->nLits = 2;
-    // tempCube->nTotal = 2;
+    tempCube->nLits = 2;
+    tempCube->nTotal = 2;
 
-    // if (p->nEqinitPredicates > 0)
-    // {
-    //     for (reg = 0; reg < p->pAig->nRegs; reg++)
-    //     {
-    //         predicateReg = Vec_IntEntry(p->vEqinitMap, reg);
-    //         if (predicateReg == -1)
-    //         {
-    //             continue;
-    //         }
+    if (p->nEqinitPredicates > 0)
+    {
+        for (reg = 0; reg < p->pAig->nRegs; reg++)
+        {
+            predicateReg = Vec_IntEntry(p->vEqinitMap, reg);
+            if (predicateReg == -1)
+            {
+                continue;
+            }
 
-    //         // Add the (!neqinit -> equal_init) constraint
-    //         tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
-    //         tempCube->Lits[1] = Abc_Var2Lit(predicateReg, 1);
+            // Add the (!neqinit -> equal_init) constraint
+            tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
+            tempCube->Lits[1] = Abc_Var2Lit(predicateReg, 1);
             
-    //         Pdr_ManSolverAddClause(p, k, tempCube);
-    //     }
-    // }
+            Pdr_ManSolverAddClause(p, k, tempCube);
+        }
+    }
 
     Pdr_SetDeref(tempCube);
 }
