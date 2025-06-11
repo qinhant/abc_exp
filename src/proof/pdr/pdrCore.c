@@ -232,6 +232,14 @@ int Pdr_ManPushClauses(Pdr_Man_t *p)
             {
                 if (!Pdr_SetContains(pTemp, pCubeK)) // pCubeK contains pTemp
                     continue;
+                if (p->pPars->fVeryVerbose){
+                    Abc_Print(1, "cube ");
+                    Pdr_SetPrint(stdout, pCubeK, Aig_ManRegNum(p->pAig), NULL);
+                    Abc_Print(1, "\n");
+                    Abc_Print(1, "subsumes cube ");
+                    Pdr_SetPrint(stdout, pTemp, Aig_ManRegNum(p->pAig), NULL);
+                    Abc_Print(1, "\n");
+                }
                 Pdr_SetDeref(pTemp);
                 Vec_PtrWriteEntry(vArrayK, m, Vec_PtrEntryLast(vArrayK));
                 Vec_PtrPop(vArrayK);
@@ -254,18 +262,25 @@ int Pdr_ManPushClauses(Pdr_Man_t *p)
                 if (pCubeMin != NULL)
                 {
                     //                Abc_Print( 1, "%d ", pCubeK->nLits - pCubeMin->nLits );
+                    if (p->pPars->fVeryVerbose){
+                        Abc_Print(1, "cube ");
+                        Pdr_SetPrint(stdout, pCubeK, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, "\nis reduced to cube ");
+                        Pdr_SetPrint(stdout, pCubeMin, Aig_ManRegNum(p->pAig), NULL);
+                        Abc_Print(1, "\n");
+                    }
                     Pdr_SetDeref(pCubeK);
                     pCubeK = pCubeMin;
                 }
             }
 
             // if it can be moved, add it to the next frame
-            // if (p->pPars->fVeryVerbose)
-            // {
-            //     Abc_Print(1, "Pushing cube ");
-            //     Pdr_SetPrint(stdout, pCubeK, Aig_ManRegNum(p->pAig), NULL);
-            //     Abc_Print(1, " from frame %d to frame %d.\n", k, k + 1);
-            // }
+            if (p->pPars->fVeryVerbose)
+            {
+                Abc_Print(1, "Pushing cube ");
+                Pdr_SetPrint(stdout, pCubeK, Aig_ManRegNum(p->pAig), NULL);
+                Abc_Print(1, " from frame %d to frame %d.\n", k, k + 1);
+            }
 
             Pdr_ManSolverAddClause(p, k + 1, pCubeK);
 
@@ -302,17 +317,34 @@ int Pdr_ManPushClauses(Pdr_Man_t *p)
                             Abc_Print(1, "cex cube ");
                             Pdr_SetPrint(stdout, pCubePred, Aig_ManRegNum(p->pAig), NULL);
                             Abc_Print(1, " at frame %d\n", k);
+                            Pdr_ManPrintClauses(p, 0);
+                            return -1;
                         }
-                        // if (k == 6 || k == 4)
-                        //     Pdr_ManPrintClauses(p, 0);
                     }
-                    Pdr_SetDeref(pCubeKSym);
+                    Pdr_ManSolverAddClause(p, k + 1, pCubeKSym);
+                    Vec_PtrForEachEntry(Pdr_Set_t *, vArrayK1, pCubeK1, i)
+                    {
+                        if (!Pdr_SetContains(pCubeK1, pCubeKSym)) // pCubeK contains pCubeK1
+                            continue;
+                        Pdr_SetDeref(pCubeK1);
+                        Vec_PtrWriteEntry(vArrayK1, i, Vec_PtrEntryLast(vArrayK1));
+                        Vec_PtrPop(vArrayK1);
+                        i--;
+                    }
+                    Vec_PtrPush(vArrayK1, pCubeKSym);
+
+                    // Pdr_SetDeref(pCubeKSym);
 
                 }
             }
         }
         if (Vec_PtrSize(vArrayK) == 0)
             RetValue = 1;
+
+        // if (k==4){
+        //     Pdr_ManPrintClauses(p, 0);
+        //     return -1;
+        // }
     }
 
     // clean up the last one
@@ -325,6 +357,15 @@ int Pdr_ManPushClauses(Pdr_Man_t *p)
         {
             if (!Pdr_SetContains(pTemp, pCubeK)) // pCubeK contains pTemp
                 continue;
+            if (p->pPars->fVeryVerbose)
+            {
+                Abc_Print(1, "cube ");
+                Pdr_SetPrint(stdout, pCubeK, Aig_ManRegNum(p->pAig), NULL);
+                Abc_Print(1, "\n");
+                Abc_Print(1, "subsumes cube ");
+                Pdr_SetPrint(stdout, pTemp, Aig_ManRegNum(p->pAig), NULL);
+                Abc_Print(1, "\n");
+            }
             /*
                         Abc_Print( 1, "===\n" );
                         Pdr_SetPrint( stdout, pCubeK, Aig_ManRegNum(p->pAig), NULL );
@@ -2105,12 +2146,14 @@ int Pdr_ManBlockCube(Pdr_Man_t *p, Pdr_Set_t *pCube)
                 }
                 else if (RetValue == 0)
                 {
-                    // Pdr_ManPrintClauses(p, 0);
                     Abc_Print(1, "Failing symmetric cube ");
                     Pdr_SetPrint(stdout, pCubeMinSym, Aig_ManRegNum(p->pAig), NULL);
                     Abc_Print(1, " in frame %d.\n", k);
                     Pdr_SetDeref(pCubeMinSym);
                     pCubeMinSym = NULL;
+                    if (p->pPars->fVeryVerbose)
+                        Pdr_ManPrintClauses(p, 0);
+                    // return -1;
                 }
                 else
                 {
