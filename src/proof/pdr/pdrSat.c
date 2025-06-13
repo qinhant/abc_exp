@@ -379,6 +379,18 @@ void Pdr_ManSolverAddClause(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
     vLits = Pdr_ManCubeToLits(p, k, pCube, 1, 0);
     RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
     assert(RetValue == 1);
+    if (p->pPars->fUseSymmetry)
+    {
+        Pdr_Set_t *pCubeSym;
+        pCubeSym = Pdr_ManSymmetricCube(p, pCube);
+        if (pCubeSym != NULL)
+        {
+            vLits = Pdr_ManCubeToLits(p, k, pCubeSym, 1, 0);
+            RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
+            assert(RetValue == 1);
+            Pdr_SetDeref(pCubeSym);
+        }
+    }
     sat_solver_compress(pSat);
 }
 

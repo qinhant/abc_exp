@@ -219,6 +219,7 @@ extern int Pdr_ManFreeVar(Pdr_Man_t *p, int k);
 extern sat_solver *Pdr_ManNewSolver(sat_solver *pSat, Pdr_Man_t *p, int k, int fInit);
 /*=== pdrCore.c ==========================================================*/
 extern int Pdr_ManCheckContainment(Pdr_Man_t *p, int k, Pdr_Set_t *pSet);
+extern Pdr_Set_t *Pdr_ManSymmetricCube(Pdr_Man_t *p, Pdr_Set_t *pCube);
 /*=== pdrInv.c ==========================================================*/
 extern Vec_Int_t *Pdr_ManCountFlopsInv(Pdr_Man_t *p);
 extern void Pdr_ManPrintProgress(Pdr_Man_t *p, int fClose, abctime Time);
