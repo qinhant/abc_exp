@@ -519,6 +519,19 @@ void Pdr_ManVerifyInvariant( Pdr_Man_t * p )
         vLits = Pdr_ManCubeToLits( p, kThis, pCube, 1, 0 );
         RetValue = sat_solver_addclause( pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits) );
         assert( RetValue );
+
+        if (p->pPars->fUseSymmetry)
+        {
+            Pdr_Set_t *pCubeSym;
+            pCubeSym = Pdr_ManSymmetricCube(p, pCube);
+            if (pCubeSym != NULL)
+            {
+                vLits = Pdr_ManCubeToLits(p, kThis, pCubeSym, 1, 0);
+                RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
+                assert(RetValue == 1);
+                Pdr_SetDeref(pCubeSym);
+            }
+        }
         sat_solver_compress( pSat );
     }
     // check each clause

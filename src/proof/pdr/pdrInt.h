@@ -152,6 +152,8 @@ struct Pdr_Man_t_
     Vec_Int_t *vPredicateRegCnt; // map from the predicate register to the # of register copies
     Pdr_Set_t *vSilenceCube; // An array of all predicates for silence purpose
     Vec_Int_t *vIsSilence; // An array to denote if a variable is silenced
+    Vec_Int_t *vEquivActMap;
+    Vec_Int_t *vEquivActUsed;
     int nSilenced; // The predicates before nSilenced are all silenced
     int nPredicates;             // number of equiv-predicate registers
     int nEqinitPredicates;    // number of eqinit-predicate registers

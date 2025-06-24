@@ -270,6 +270,8 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
     p->vPredicateRegCnt = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vEqInitRegCnt = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vEqinitMap = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vEquivActMap = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vEquivActUsed = Vec_IntStart(Aig_ManRegNum(pAig));
 
     p->nEqinitPredicates = 0;
     while (fgets(line, sizeof(line), pFile))

@@ -399,21 +399,15 @@ Abc_Print( 1, " in frame %d.\n", k );
 
     // collect CI objects
     Pdr_ManCollectCone( p->pAig, vCoObjs, vCiObjs, vNodes );
-    // Abc_Print(1, "point 0.6\n");
     // collect values
     Pdr_ManCollectValues( p, k, vCiObjs, vCiVals );
-    // Abc_Print(1, "point 0.7\n");
     Pdr_ManCollectValues( p, k, vCoObjs, vCoVals );
-    // Abc_Print(1, "point 0.8\n");
     // simulate for the first time
 if ( p->pPars->fVeryVerbose ){
-    // Abc_Print(1, "point 1\n");
 Pdr_ManPrintCex( p->pAig, vCiObjs, vCiVals, NULL );
-// Abc_Print(1, "point 2\n");
 }
     RetValue = Pdr_ManSimDataInit( p->pAig, vCiObjs, vCiVals, vNodes, vCoObjs, vCoVals, NULL );
     assert( RetValue );
-    // Abc_Print(1, "point 3\n");
     // iteratively remove flops
     if ( p->pPars->fFlopPrio )
     {
@@ -473,17 +467,14 @@ Pdr_ManPrintCex( p->pAig, vCiObjs, vCiVals, NULL );
                 Pdr_ManExtendUndo( p->pAig, vUndo );
         }
     }
-    // Abc_Print(1, "point 4\n");
 
     if (p->pPars->fVeryVerbose)
         Pdr_ManPrintCex(p->pAig, vCiObjs, vCiVals, vCi2Rem);
-    // Abc_Print(1, "point 4.1\n");
     RetValue = Pdr_ManSimDataInit( p->pAig, vCiObjs, vCiVals, vNodes, vCoObjs, vCoVals, vCi2Rem );
     assert( RetValue );
 
     // derive the set of resulting registers
     Pdr_ManDeriveResult( p->pAig, vCiObjs, vCiVals, vCi2Rem, vRes, vPiLits );
-    // Abc_Print(1, "point 4.2\n");
     assert( Vec_IntSize(vRes) > 0 );
     //p->tTsim += Abc_Clock() - clk;
 
