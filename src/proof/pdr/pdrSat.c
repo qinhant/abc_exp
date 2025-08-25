@@ -85,13 +85,12 @@ sat_solver *Pdr_ManCreateSolver(Pdr_Man_t *p, int k)
 void Pdr_ManAddPredicateSemantic(Pdr_Man_t *p, int k)
 {
     Pdr_Set_t *tempCube;
-    tempCube = (Pdr_Set_t *)ABC_ALLOC(char, sizeof(Pdr_Set_t) + 3 * sizeof(int));
-    tempCube->nLits = 3;
-    tempCube->nTotal = 3;
+    tempCube = (Pdr_Set_t *)ABC_ALLOC(char, sizeof(Pdr_Set_t) + 4 * sizeof(int));
     tempCube->nRefs = 1;
     tempCube->Sign = 0;
 
-    int reg, symReg, predicateReg;
+    int reg, SymReg, PredicateReg;
+    int Lit;
 
     // Aig_Obj_t* pObjPo; 
     // int Lits[1];
@@ -130,33 +129,51 @@ void Pdr_ManAddPredicateSemantic(Pdr_Man_t *p, int k)
     {
         for (reg = 0; reg < p->pAig->nRegs; reg++)
         {
-            symReg = p->vSymMap->pArray[reg];
-            predicateReg = Vec_IntEntry(p->vEquivMap, reg);
-            if (predicateReg == -1)
+            SymReg = p->vSymMap->pArray[reg];
+            PredicateReg = Vec_IntEntry(p->vEquivMap, reg);
+            if (PredicateReg == -1)
             {
                 continue;
             }
             
             // Add the (!neq_predicate -> equal) constraint
+            tempCube->nLits = 3;
+            tempCube->nTotal = 3;
             tempCube->Lits[0] = Abc_Var2Lit(reg, 1);
-            tempCube->Lits[1] = Abc_Var2Lit(symReg, 0);
-            tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 1);
+            tempCube->Lits[1] = Abc_Var2Lit(SymReg, 0);
+            tempCube->Lits[2] = Abc_Var2Lit(PredicateReg, 1);
 
             Pdr_ManSolverAddClause(p, k, tempCube);
 
-            // Add the (neq_predicate -> !equal) constraint -- wrong way!!!
-            // if (symReg > reg) {
-                // tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
-                // tempCube->Lits[1] = Abc_Var2Lit(symReg, 0);
-                // tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 0);
+            // Add the (neq_predicate -> !equal || act) constraint. This has no effect when activation variable is free
+            // Lit = Abc_Var2Lit(Pdr_ManFreeVar(p, k), 0);
 
-                // Pdr_ManSolverAddClause(p, k, tempCube);
+            // if (SymReg > reg) {
+            //     sat_solver *pSat;
+            //     Vec_Int_t *vLits;
+            //     int RetValue;
+            //     pSat = Pdr_ManSolver(p, k);
+            //     tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
+            //     tempCube->Lits[1] = Abc_Var2Lit(SymReg, 0);
+            //     tempCube->Lits[2] = Abc_Var2Lit(PredicateReg, 0);
 
-                // tempCube->Lits[0] = Abc_Var2Lit(reg, 1);
-                // tempCube->Lits[1] = Abc_Var2Lit(symReg, 1);
-                // tempCube->Lits[2] = Abc_Var2Lit(predicateReg, 0);
+            //     vLits = Pdr_ManCubeToLits(p, k, tempCube, 1, 0);
+            //     Vec_IntPush(vLits, Lit);
+            //     RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
+            //     assert(RetValue == 1);
 
-                // Pdr_ManSolverAddClause(p, k, tempCube);
+            //     tempCube->Lits[0] = Abc_Var2Lit(reg, 1);
+            //     tempCube->Lits[1] = Abc_Var2Lit(SymReg, 1);
+            //     tempCube->Lits[2] = Abc_Var2Lit(PredicateReg, 0);
+
+            //     vLits = Pdr_ManCubeToLits(p, k, tempCube, 1, 0);
+            //     Vec_IntPush(vLits, Lit);
+            //     RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
+            //     assert(RetValue == 1);
+
+            //     sat_solver_compress(pSat);
+            //     p->vEquivActMap->pArray[PredicateReg] =  Lit;
+            //     Vec_IntAddToEntry(p->vActVars, k, 1);
             // }
         }
     }
@@ -170,15 +187,15 @@ void Pdr_ManAddPredicateSemantic(Pdr_Man_t *p, int k)
     {
         for (reg = 0; reg < p->pAig->nRegs; reg++)
         {
-            predicateReg = Vec_IntEntry(p->vEqinitMap, reg);
-            if (predicateReg == -1)
+            PredicateReg = Vec_IntEntry(p->vEqinitMap, reg);
+            if (PredicateReg == -1)
             {
                 continue;
             }
 
             // Add the (!neqinit -> equal_init) constraint
             tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
-            tempCube->Lits[1] = Abc_Var2Lit(predicateReg, 1);
+            tempCube->Lits[1] = Abc_Var2Lit(PredicateReg, 1);
             
             Pdr_ManSolverAddClause(p, k, tempCube);
         }
@@ -379,6 +396,18 @@ void Pdr_ManSolverAddClause(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
     vLits = Pdr_ManCubeToLits(p, k, pCube, 1, 0);
     RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
     assert(RetValue == 1);
+    if (p->pPars->fUseSymmetry)
+    {
+        Pdr_Set_t *pCubeSym;
+        pCubeSym = Pdr_ManSymmetricCube(p, pCube);
+        if (pCubeSym != NULL)
+        {
+            vLits = Pdr_ManCubeToLits(p, k, pCubeSym, 1, 0);
+            RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
+            assert(RetValue == 1);
+            Pdr_SetDeref(pCubeSym);
+        }
+    }
     sat_solver_compress(pSat);
 }
 
@@ -438,6 +467,219 @@ int Pdr_ManCheckCubeCs(Pdr_Man_t *p, int k, Pdr_Set_t *pCube)
 
 /**Function*************************************************************
 
+  Synopsis    []
+
+  Description [When the SAT solver finds a cex, try to further constrain it 
+  to let it find another cex in which two copies differ as much as possible]
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Pdr_FindNewCex(Pdr_Man_t *p, int k, Vec_Int_t *assumed_literals)
+{
+    int SatRet, Limit;
+    int reg, Lit, SymReg, PredicateReg;
+    int AssumeNum;
+    int RetValue = 1;
+    sat_solver *pSat;
+    Vec_Int_t *tempLits;
+    Vec_Int_t *vActs;
+    Vec_Int_t *assumptions;
+
+    assumptions = (assumed_literals);
+
+    Pdr_Set_t *tempCube;
+    tempCube = (Pdr_Set_t *)ABC_ALLOC(char, sizeof(Pdr_Set_t) + 3 * sizeof(int));
+    tempCube->nRefs = 1;
+    tempCube->Sign = 0;
+    tempCube->nTotal = 3;
+    tempCube->nLits = 3;
+
+    pSat = Pdr_ManFetchSolver(p, k);
+    vActs = NULL;
+
+    Abc_Print(1, "Original Assumptions0: ");
+    Vec_IntPrint(assumed_literals);
+
+
+    if (p->nPredicates > 0)
+    {
+        for (int i = 0; i < p->pAig->nRegs; i++)
+            p->vEquivActUsed->pArray[i] = 0;
+        for (int i = 0; i < p->pAig->nRegs; i++)
+        {
+            PredicateReg = p->vEquivMap->pArray[i];
+            if (PredicateReg >= 0 && p->vEquivActUsed->pArray[PredicateReg] == 0)
+            {
+                p->vEquivActUsed->pArray[PredicateReg] = 1;
+                Lit = Abc_Var2Lit(Pdr_ManFreeVar(p, k), 0);
+                Vec_IntAddToEntry(p->vActVars, k, 1);
+                if (vActs == NULL)
+                {
+                    vActs = Vec_IntStart(1);
+                    vActs->pArray[0] = Lit;
+                }
+                else
+                {
+                    Vec_IntPush(vActs, Lit);
+                }
+                Vec_IntPush(vActs, PredicateReg);
+                Abc_Print(1, "Activation Literal: %d\n", Lit);
+                p->vEquivActMap->pArray[PredicateReg] = Lit;
+            }
+        }
+        for (reg = 0; reg < p->pAig->nRegs; reg++)
+        {
+            SymReg = p->vSymMap->pArray[reg];
+            PredicateReg = Vec_IntEntry(p->vEquivMap, reg);
+            if (PredicateReg == -1)
+            {
+                continue;
+            }
+
+            if (SymReg > reg)
+            {
+                // Add the (neq_predicate -> !equal || act) constraint. This has no effect when activation variable is free
+                
+                Lit = p->vEquivActMap->pArray[PredicateReg];
+
+                tempCube->nLits = 3;
+                tempCube->Lits[0] = Abc_Var2Lit(reg, 0);
+                tempCube->Lits[1] = Abc_Var2Lit(SymReg, 0);
+                tempCube->Lits[2] = Abc_Var2Lit(PredicateReg, 0);
+
+                tempLits = Pdr_ManCubeToLits(p, k, tempCube, 1, 0);
+                Vec_IntPush(tempLits, Lit);
+                RetValue = sat_solver_addclause(pSat, Vec_IntArray(tempLits), Vec_IntArray(tempLits) + Vec_IntSize(tempLits));
+                assert(RetValue == 1);
+
+                tempCube->Lits[0] = Abc_Var2Lit(reg, 1);
+                tempCube->Lits[1] = Abc_Var2Lit(SymReg, 1);
+                tempCube->Lits[2] = Abc_Var2Lit(PredicateReg, 0);
+
+                tempLits = Pdr_ManCubeToLits(p, k, tempCube, 1, 0);
+                Vec_IntPush(tempLits, Lit);
+                RetValue = sat_solver_addclause(pSat, Vec_IntArray(tempLits), Vec_IntArray(tempLits) + Vec_IntSize(tempLits));
+                assert(RetValue == 1);
+
+                sat_solver_compress(pSat);
+            }
+        }
+        Pdr_SetDeref(tempCube);
+    }
+
+    AssumeNum = assumptions->nSize;
+    // Use all Equiv Act Literal at the beginning
+
+
+    Abc_Print(1, "Start searching for new cex\n");
+    SatRet = l_False;
+    Abc_Print(1, "Original Assumptions: ");
+    Vec_IntPrint(assumptions);
+    Abc_Print(1, "Sat Solver Size: %d\n", pSat->size);
+    while (SatRet == l_False)
+    {
+        assumptions->nSize = AssumeNum;
+        for (int i = 0; i < p->pAig->nRegs; i++)
+        {
+            if (p->vEquivActUsed->pArray[i] == 1)
+            {
+                Vec_IntPush(assumptions, Abc_LitNot(p->vEquivActMap->pArray[i]));
+            }
+        }
+        Vec_IntPrint(assumptions);
+        int maxvar = lit_var(assumptions->pArray[0]);
+        for (int i = 0; i < assumptions->nSize; i++)
+        {
+            lit l = assumptions->pArray[i];
+            maxvar = lit_var(l) > maxvar ? lit_var(l) : maxvar;
+        }
+
+        sat_solver_setnvars(pSat, maxvar + 1);
+
+        Limit = sat_solver_set_runtime_limit(pSat, Pdr_ManTimeLimit(p));
+        SatRet = sat_solver_solve(pSat, assumptions->pArray, assumptions->pArray + assumptions->nSize, 0, 0, 0, 0);
+        sat_solver_set_runtime_limit(pSat, Limit);
+
+        if (SatRet == l_False)
+        {
+            Abc_Print(1, "Over-constrained, loosening constraints\n");
+            int nCoreLits, *pCoreLits;
+            // get relevant SAT literals
+            nCoreLits = sat_solver_final(pSat, &pCoreLits);
+            // translate them into register literals and remove auxiliary
+            for (int i = 0; i < nCoreLits; i++)
+            {
+                Abc_Print(1, "UNSAT Core Literal: %d\n", pCoreLits[i]);
+                Vec_Int_t *vVar2Ids = (Vec_Int_t *)Vec_PtrEntry(&p->vVar2Ids, k);
+                int iSatVar = Abc_Lit2Var(pCoreLits[i]);
+                assert(iSatVar > 0 && iSatVar < Vec_IntSize(vVar2Ids));
+                int ObjId = Vec_IntEntry(vVar2Ids, iSatVar);
+                if (ObjId == -1)
+                    for (int j = 0; j < vActs->nSize; j = j + 2)
+                    {
+                        if (pCoreLits[i] == vActs->pArray[j])
+                        {
+                            PredicateReg = vActs->pArray[j+1];
+                            p->vEquivActUsed->pArray[PredicateReg] = 0;
+                        }
+                    }
+                else 
+                {
+                    Aig_Obj_t * pObj = Aig_ManObj(p->pAig, ObjId);
+                    if (Saig_ObjIsLi(p->pAig, pObj))
+                        Abc_Print(1, "UNSAT Literal is Latch input\n");
+                    if (Saig_ObjIsLo(p->pAig, pObj))
+                        Abc_Print(1, "UNSAT Literal is Latch output\n");
+                }
+            }
+
+            // tempLits = Pdr_ManLitsToCube(p, k, pCoreLits, nCoreLits);
+
+            // for (int i = 0; i < tempLits->nSize; i++)
+            // {
+            //     PredicateReg = p->vEquivMap->pArray[tempLits->pArray[i]];
+            //     if (PredicateReg < 0)
+            //         continue;
+            //     p->vEquivActUsed->pArray[PredicateReg] = 0;
+            // }
+
+            // for (int i = 0; i < p->vEquivActUsed->nSize; i++)
+            // {
+            //     PredicateReg = p->vEquivMap->pArray[i];
+            //     if (PredicateReg >= 0)
+            //         p->vEquivActUsed->pArray[PredicateReg] = 0;
+            // }
+        }
+        if (SatRet == l_Undef)
+        {
+            RetValue = -1;
+            break;
+        }
+    }
+
+    for (int i = 0; i < p->pAig->nRegs; i++)
+    {
+        PredicateReg = p->vEquivMap->pArray[i];
+        if (PredicateReg >= 0 && (p->vEquivActUsed->pArray[PredicateReg] != -1))
+        {
+            p->vEquivActUsed->pArray[PredicateReg] = -1;
+        }
+        Lit = p->vEquivActMap->pArray[i];
+        SatRet = sat_solver_addclause(pSat, &Lit, &Lit + 1);
+        assert(SatRet == 1);
+    }
+    sat_solver_compress(pSat);
+
+    Abc_Print(1, "End searching for new cex\n");
+    return RetValue;
+}
+
+
+/**Function*************************************************************
+
   Synopsis    [Checks if the cube holds (UNSAT) in the given timeframe.]
 
   Description [Return 1/0 if cube or property are proved to hold/fail
@@ -453,7 +695,7 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
     // int fUseLit = 0;
     int fLitUsed = 0;
     sat_solver *pSat;
-    Vec_Int_t *vLits;
+    Vec_Int_t *vLits, *assumptions;
     int Lit, RetValue;
     int iVar;
     Aig_Obj_t *pObj;
@@ -484,12 +726,22 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
                 }
                 // Abc_Print(1, "adding silenced lits to vLits\n");
             }
-        vLits->pArray[0] = Abc_Var2Lit(Pdr_ObjSatVar(p, k, 2, Aig_ManCo(p->pAig, p->iOutCur)), 0); // pos literal (property fails)
+        Lit = Abc_Var2Lit(Pdr_ObjSatVar(p, k, 2, Aig_ManCo(p->pAig, p->iOutCur)), 0); // pos literal (property fails)
+        vLits->pArray[0] = Lit;
         Limit = sat_solver_set_runtime_limit(pSat, Pdr_ManTimeLimit(p));
         RetValue = sat_solver_solve(pSat, vLits->pArray, vLits->pArray + vLits->nSize, nConfLimit, 0, 0, 0);
         sat_solver_set_runtime_limit(pSat, Limit);
         if (RetValue == l_Undef)
             return -1;
+        // Try to let the sat solver gives us a cex where two copies differ as much as possible
+        if (p->pPars->fPredicateReplace && (ppPred != NULL))
+        {
+            if (RetValue == l_True)
+            {
+                // if (Pdr_FindNewCex(p, k, vLits) == -1)
+                //     return -1;
+            }
+        }
     }
     else // check relative containment in terms of next states
     // This is check that for a given cube c, whehter !c && R_k && Tr && c is satisfiable
@@ -503,6 +755,7 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
 
             // add activation literal
             Lit = Abc_Var2Lit(Pdr_ManFreeVar(p, k), 0);
+            // Abc_Print(1, "Original activation literal: %d\n", Lit);
             // add activation literal
             Vec_IntPush(vLits, Lit);
             RetValue = sat_solver_addclause(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits));
@@ -543,12 +796,25 @@ int Pdr_ManCheckCube(Pdr_Man_t *p, int k, Pdr_Set_t *pCube, Pdr_Set_t **ppPred, 
         // solve
         clk = Abc_Clock();
         Limit = sat_solver_set_runtime_limit(pSat, Pdr_ManTimeLimit(p));
+
+        // Abc_Print(1, "vLits1: ");
+        // Vec_IntPrint(vLits);
         
-        // for(int i = 0; i < p->nSilenced; i++){
-        //     Vec_IntPush(vLits, Abc_Var2Lit(Pdr_ObjSatVar(p, k, 3, Saig_ManLo(p->pAig, p->vPredicatesSilence->pArray[i])), 0));
-        // }
+        assumptions = Vec_IntDup(vLits);
         RetValue = sat_solver_solve(pSat, Vec_IntArray(vLits), Vec_IntArray(vLits) + Vec_IntSize(vLits), fTryConf ? p->pPars->nConfGenLimit : nConfLimit, 0, 0, 0);
         sat_solver_set_runtime_limit(pSat, Limit);
+        // Try to let the sat solver gives us a cex where two copies differ as much as possible
+        if (p->pPars->fPredicateReplace && (ppPred != NULL))
+        {
+            if (RetValue == l_True)
+            {
+                // Abc_Print(1, "vLits2: ");
+                // Vec_IntPrint(vLits);
+                // if (Pdr_FindNewCex(p, k, assumptions) == -1)
+                //     return -1;
+            }
+        }
+        Vec_IntFree(assumptions);
         if (RetValue == l_Undef)
         {
             if (fTryConf && p->pPars->nConfGenLimit)

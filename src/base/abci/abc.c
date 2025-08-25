@@ -30345,7 +30345,7 @@ int Abc_CommandPdr(Abc_Frame_t *pAbc, int argc, char **argv)
     int c;
     Pdr_ManSetDefaultParams(pPars);
     Extra_UtilGetoptReset();
-    while ((c = Extra_UtilGetopt(argc, argv, "MFCDQTHGSLIPREaxrmuyfqipdegjonctkvwzhslb")) != EOF)
+    while ((c = Extra_UtilGetopt(argc, argv, "MFCDQTHGSLIPREXaxrmuyfqipdegjonctkvwzhslb")) != EOF)
     {
         switch (c)
         {
@@ -30486,6 +30486,9 @@ int Abc_CommandPdr(Abc_Frame_t *pAbc, int argc, char **argv)
             break;
         case 'E':
             pPars->fIncrPred ^= 1;
+            break;
+        case 'X':
+            pPars->fExhaustivePredicate ^= 1;
             break;
         case 'a':
             pPars->fSolveAll ^= 1;

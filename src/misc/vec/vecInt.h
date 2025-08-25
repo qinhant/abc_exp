@@ -47,6 +47,13 @@ struct Vec_Int_t_
     int *            pArray;
 };
 
+typedef struct Vec_Int_2D_t_ Vec_Int_2D_t;
+struct Vec_Int_2D_t_
+{
+    int nSize;
+    Vec_Int_t **pArray;
+};
+
 ////////////////////////////////////////////////////////////////////////
 ///                      MACRO DEFINITIONS                           ///
 ////////////////////////////////////////////////////////////////////////

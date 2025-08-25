@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #include "misc/vec/vec.h"
 #include "aig/hop/hop.h"

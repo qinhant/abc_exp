@@ -84,6 +84,7 @@ struct Pdr_Par_t_
   int fUseSymmetry;                     // Use symmetric cube
   int fPredicateReplace;                // Do the predicate cube replacement
   int fIterativePredicate;              // Do the predicate cube replacement iteratively
+  int fExhaustivePredicate;             // Do the predicate cube replacement exhaustively
   int fIncrPred;                        // Silence all predicate variables and release them incrementally        
   char *pInvFileName;                   // invariable file name
   char *pPriFileName;                   // priority file name

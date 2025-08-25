@@ -233,6 +233,39 @@ Pdr_Set_t * Pdr_SetRef( Pdr_Set_t * p )
 
   Synopsis    []
 
+  Description [Remove a group of literals from the given cube]
+
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+
+void Pdr_SetRemoveGroup(Pdr_Set_t* p, int* group, int group_size)
+{
+    int new_size = 0;
+    for (int i = 0; i < p->nLits; ++i)
+    {
+        bool keep = true;
+        for (int j = 0; j < group_size; ++j)
+        {
+            if (p->Lits[i] == group[j])
+            {
+                keep = false;
+                break;
+            }
+        }
+        if (keep)
+            p->Lits[new_size++] = p->Lits[i];
+    }
+    p->nLits = new_size;
+    p->nTotal = new_size;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
   Description []
                
   SideEffects []

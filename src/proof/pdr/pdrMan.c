@@ -270,6 +270,8 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
     p->vPredicateRegCnt = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vEqInitRegCnt = Vec_IntStart(Aig_ManRegNum(pAig));
     p->vEqinitMap = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vEquivActMap = Vec_IntStart(Aig_ManRegNum(pAig));
+    p->vEquivActUsed = Vec_IntStart(Aig_ManRegNum(pAig));
 
     p->nEqinitPredicates = 0;
     while (fgets(line, sizeof(line), pFile))
@@ -332,6 +334,19 @@ int Pdr_ManReadRelations(char *pFileName, Aig_Man_t *pAig, Pdr_Man_t *p)
         }
     }
 
+    // int PredicateReg, Lit;
+    // for (int i = 0; i < p->pAig->nRegs; i++)
+    // {
+    //     PredicateReg = p->vEquivMap->pArray[i];
+    //     if (PredicateReg >= 0 && p->vEquivActUsed->pArray[PredicateReg] == 0)
+    //     {
+    //         p->vEquivActUsed->pArray[PredicateReg] = 1;
+    //         Lit = Abc_Var2Lit(Pdr_ManFreeVar(p, k), 0);
+    //         Vec_IntAddToEntry(p->vActVars, k, 1);
+    //         Abc_Print(1, "Activation Literal: %d\n", Lit);
+    //         p->vEquivActMap->pArray[PredicateReg] = Lit;
+    //     }
+    // }
 
     fclose(pFile);
     return 1;
@@ -444,8 +459,8 @@ void Pdr_ManStop(Pdr_Man_t *p)
     Aig_ManCleanMarkAB(p->pAig);
     if (p->pPars->fVerbose)
     {
-        Abc_Print(1, "Block =%5d  Oblig =%6d  Clause =%6d  Call =%6d (sat=%.1f%%)  Cex =%4d  Start =%4d\n",
-                  p->nBlocks, p->nObligs, p->nCubes, p->nCalls, 100.0 * p->nCallsS / p->nCalls, p->nCexesTotal, p->nStarts);
+        Abc_Print(1, "Block =%5d  Oblig =%6d  Clause =%6d  Call =%6d (sat=%.1f%%)  Cex =%4d  Start =%4d  MaxPred =%4d\n",
+                  p->nBlocks, p->nObligs, p->nCubes, p->nCalls, 100.0 * p->nCallsS / p->nCalls, p->nCexesTotal, p->nStarts, p->nMaxPred);
         ABC_PRTSP("SAT solving", p->tSat, p->tTotal);
         ABC_PRTSP("  unsat    ", p->tSatUnsat, p->tTotal);
         ABC_PRTSP("  sat      ", p->tSatSat, p->tTotal);

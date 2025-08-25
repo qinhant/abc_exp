@@ -31,8 +31,13 @@
 #include "pdr.h"
 #include "misc/hash/hashInt.h"
 #include "aig/gia/giaAig.h"
+#include <stdbool.h>
 
 // #define PDR_USE_SATOKO 1
+
+#define MAX_PRED_GROUPS 5
+#define MAX_LITS 128
+#define MAX_QUEUE_SIZE (1 << MAX_PRED_GROUPS)
 
 #ifndef PDR_USE_SATOKO
 #include "sat/bsat/satSolver.h"
@@ -152,6 +157,9 @@ struct Pdr_Man_t_
     Vec_Int_t *vPredicateRegCnt; // map from the predicate register to the # of register copies
     Pdr_Set_t *vSilenceCube; // An array of all predicates for silence purpose
     Vec_Int_t *vIsSilence; // An array to denote if a variable is silenced
+    Vec_Int_t *vEquivActMap;
+    Vec_Int_t *vEquivActUsed;
+    Vec_Int_2D_t *vEquivActTable;
     int nSilenced; // The predicates before nSilenced are all silenced
     int nPredicates;             // number of equiv-predicate registers
     int nEqinitPredicates;    // number of eqinit-predicate registers
@@ -175,6 +183,7 @@ struct Pdr_Man_t_
     int nXsimRuns;
     int nXsimLits;
     int nPCubes; // the number of cubes strengthened with predicates
+    int nMaxPred; // The maximum number of predicates in a cube
     // runtime
     abctime timeToStop;
     abctime timeToStopOne;
@@ -219,6 +228,7 @@ extern int Pdr_ManFreeVar(Pdr_Man_t *p, int k);
 extern sat_solver *Pdr_ManNewSolver(sat_solver *pSat, Pdr_Man_t *p, int k, int fInit);
 /*=== pdrCore.c ==========================================================*/
 extern int Pdr_ManCheckContainment(Pdr_Man_t *p, int k, Pdr_Set_t *pSet);
+extern Pdr_Set_t *Pdr_ManSymmetricCube(Pdr_Man_t *p, Pdr_Set_t *pCube);
 /*=== pdrInv.c ==========================================================*/
 extern Vec_Int_t *Pdr_ManCountFlopsInv(Pdr_Man_t *p);
 extern void Pdr_ManPrintProgress(Pdr_Man_t *p, int fClose, abctime Time);
