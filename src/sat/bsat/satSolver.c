@@ -1763,7 +1763,9 @@ int sat_solver_addclause(sat_solver* s, lit* begin, lit* end)
             *j = *(j-1);
         *j = l;
     }
+    
     sat_solver_setnvars(s,maxvar+1);
+
 
     ///////////////////////////////////
     // add clause to internal storage

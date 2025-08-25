@@ -422,7 +422,6 @@ static inline sat_solver * Pdr_ManNewSolver2( sat_solver * pSat, Pdr_Man_t * p, 
     sat_solver_set_runtime_limit( pSat, p->timeToStop );
     sat_solver_set_runid( pSat, p->pPars->RunId );
     sat_solver_set_stop_func( pSat, p->pPars->pFuncStop );
-
     
 
     return pSat;
